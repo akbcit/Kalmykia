@@ -1,7 +1,8 @@
 // src/core/Renderer.ts
 import * as THREE from "three";
 import { setupRenderer } from "../utils/setupRenderer"; // Correct import for utility function
-import { ScreenProps } from "types/screen/ScreenProps";
+import { ScreenProps } from "../../types/screen/ScreenProps";
+
 /**
  * Renderer class encapsulates a Three.js WebGLRenderer and manages its configuration
  * through ScreenProps. It uses utility functions for setup to keep the code modular and maintainable.

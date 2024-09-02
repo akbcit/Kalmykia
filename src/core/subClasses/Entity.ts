@@ -1,31 +1,63 @@
-// src/core/Entity.ts
-import * as THREE from "three";
+import { Component } from "./Component";
 
-// Base class for all entities within the scene
+let nextEntityId = 0;
+
 export class Entity {
-    protected mesh: THREE.Object3D;
+    private id: number;
+    private components: Map<string, Component>;
 
-    constructor(mesh: THREE.Object3D) {
-        this.mesh = mesh;
+    constructor() {
+        this.id = nextEntityId++;
+        this.components = new Map<string, Component>();
     }
 
-    // Adds the entity's mesh to the specified scene
-    public addToScene(scene: THREE.Scene): void {
-        scene.add(this.mesh);
+    // Returns the unique identifier of the entity
+    public getId(): number {
+        return this.id;
     }
 
-    // Removes the entity's mesh from the specified scene
-    public removeFromScene(scene: THREE.Scene): void {
-        scene.remove(this.mesh);
+    // Adds a component to the entity, with chaining for flexibility
+    public addComponent(component: Component): this {
+        const componentName = component.constructor.name;
+        if (this.components.has(componentName)) {
+            console.warn(`Entity ${this.id} already has a component of type ${componentName}.`);
+        }
+        this.components.set(componentName, component);
+        return this;
     }
 
-    // Updates the entity (override in derived classes for custom behavior)
+    // Retrieves a component by type, cast to the correct class
+    public getComponent<T extends Component>(type: new () => T): T | undefined {
+        return this.components.get(type.name) as T;
+    }
+
+    // Checks if the entity has a component of a specific type
+    public hasComponent<T extends Component>(type: new () => T): boolean {
+        return this.components.has(type.name);
+    }
+
+    // Removes a component and triggers the component's cleanup
+    public removeComponent<T extends Component>(type: new () => T): void {
+        const componentName = type.name;
+        const component = this.components.get(componentName);
+        if (component) {
+            component.dispose(); // Clean up the component before removal
+            this.components.delete(componentName);
+        } else {
+            console.warn(`Entity ${this.id} does not have a component of type ${componentName} to remove.`);
+        }
+    }
+
+    // Calls the update method on all components
     public update(delta: number): void {
-        // Default update logic (e.g., animations, transformations)
+        this.components.forEach((component) => {
+            component.update(delta);
+        });
     }
 
-    // Exposes the underlying mesh
-    public getMesh(): THREE.Object3D {
-        return this.mesh;
+    // Clears all components, useful for cleanup or entity destruction
+    public clearComponents(): void {
+        this.components.forEach((component) => component.dispose()); // Dispose of each component
+        this.components.clear();
     }
 }

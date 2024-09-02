@@ -1,56 +1,64 @@
 // src/core/Camera.ts
 import * as THREE from "three";
-import { setupCamera } from "../utils/setupCamera"; // Utility function to initialize the camera
-import { CameraProps } from "types/camera/CameraProps";
+import { setupCamera } from "../utils/setupCamera";
+import { CameraProps, CameraType, OrthographicCameraProps, PerspectiveCameraProps } from "../../types/camera/CameraProps";
 
-/**
- * Camera class encapsulates a Three.js PerspectiveCamera and manages its configuration
- * through CameraProps. It uses utility functions for setup to keep the code modular and maintainable.
- */
 export class Camera {
-    // Private Three.js PerspectiveCamera object
-    private camera: THREE.PerspectiveCamera;
+    // Private Three.js Camera object, supporting multiple camera types
+    private camera: THREE.Camera;
 
-    /**
-     * Constructor initializes the camera using provided CameraProps, configuring properties
-     * like FOV, aspect ratio, near and far planes, and position.
-     *
-     * @param props - Optional CameraProps object containing configuration options.
-     */
+    // Default camera properties for the most common use case: PerspectiveCamera
+    private static defaultPerspectiveProps: PerspectiveCameraProps = {
+        cameraType: CameraType.Perspective,
+        fov: 75, // Default field of view
+        aspect: window.innerWidth / window.innerHeight, // Default aspect ratio
+        near: 0.1, // Default near clipping plane
+        far: 1000, // Default far clipping plane
+        position: new THREE.Vector3(0, 0, 5), // Default position
+    };
+
     constructor(props?: CameraProps) {
+        // Use default properties if props are undefined
+        const cameraProps = props || Camera.defaultPerspectiveProps;
+
         // Initialize the camera using the setupCamera utility function
-        this.camera = setupCamera(props);
+        this.camera = setupCamera(cameraProps);
     }
 
-    /**
-     * Exposes the underlying Three.js camera object for external use, such as rendering or controls.
-     *
-     * @returns The configured Three.js PerspectiveCamera.
-     */
-    public getCamera(): THREE.PerspectiveCamera {
+    public getCamera(): THREE.Camera {
         return this.camera;
     }
 
-    /**
-     * Updates the camera properties dynamically based on provided CameraProps.
-     * Useful for adjusting the camera's position, FOV, or other parameters at runtime.
-     *
-     * @param props - CameraProps object containing new configuration options.
-     */
     public update(props: CameraProps): void {
         if (props.position) {
             this.camera.position.copy(props.position);
         }
-        // Additional updates for FOV, aspect ratio, etc., can be handled here
-        if (props.fov) {
-            this.camera.fov = props.fov;
-            this.camera.updateProjectionMatrix();
+
+        // Handle updates specific to the camera type
+        if (this.camera instanceof THREE.PerspectiveCamera && props.cameraType === CameraType.Perspective) {
+            const perspectiveProps = props as PerspectiveCameraProps;
+            if (perspectiveProps.fov !== undefined) {
+                this.camera.fov = perspectiveProps.fov;
+                this.camera.updateProjectionMatrix();
+            }
+            if (perspectiveProps.aspect !== undefined) {
+                this.camera.aspect = perspectiveProps.aspect;
+                this.camera.updateProjectionMatrix();
+            }
         }
-        if (props.aspect) {
-            this.camera.aspect = props.aspect;
-            this.camera.updateProjectionMatrix();
+
+        if (this.camera instanceof THREE.OrthographicCamera && props.cameraType === CameraType.Orthographic) {
+            const orthographicProps = props as OrthographicCameraProps;
+            if (orthographicProps.left !== undefined && orthographicProps.right !== undefined) {
+                this.camera.left = orthographicProps.left;
+                this.camera.right = orthographicProps.right;
+                this.camera.updateProjectionMatrix();
+            }
+            if (orthographicProps.top !== undefined && orthographicProps.bottom !== undefined) {
+                this.camera.top = orthographicProps.top;
+                this.camera.bottom = orthographicProps.bottom;
+                this.camera.updateProjectionMatrix();
+            }
         }
     }
-
-    // Add more camera-specific methods if needed (e.g., controls, animations)
 }

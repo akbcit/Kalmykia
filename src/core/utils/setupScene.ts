@@ -2,7 +2,8 @@
 import * as THREE from "three";
 import { setupLighting } from "./setupLighting";
 import { setupEnvironmentMap } from "./setupEnvironmentMap";
-import { SceneProps } from "types/scene/SceneProps";
+import { SceneProps } from "../../types/scene/SceneProps";
+
 
 /**
  * Sets up the Three.js scene with optional properties for background, fog, helpers, and lighting.

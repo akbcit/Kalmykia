@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Scene, Renderer, Entity, Camera } from "./index";
+import { Scene, Renderer, GameObject, Camera } from "./index";
 import { UpdateCallback } from "../types/UpdateCallback";
 import { KalmykiaProps } from "../types/KalmykiaProps";
 
@@ -23,7 +23,7 @@ export class Kalmykia {
     // Constructor to initialize the engine with a container element and optional properties
     constructor(container: HTMLElement, props?: KalmykiaProps) {
         // Set up the scene with provided scene properties
-        this.scene = new Scene(props?.scene); 
+        this.scene = new Scene(props?.scene);
 
         // Set up the camera, potentially using camera props for configuration
         this.camera = new Camera(props?.camera);
@@ -60,19 +60,39 @@ export class Kalmykia {
     private setupEventListeners(): void {
         window.addEventListener('resize', () => {
             const camera = this.camera.getCamera();
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+
+            // Check if the camera is a PerspectiveCamera before updating the aspect ratio
+            if (camera instanceof THREE.PerspectiveCamera) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+            }
+
+            // For OrthographicCamera or other camera types, update as needed
+            if (camera instanceof THREE.OrthographicCamera) {
+                // Optional: Adjust orthographic camera properties on resize if needed
+                // For example, update the left, right, top, and bottom properties if your design requires it
+                const aspect = window.innerWidth / window.innerHeight;
+                const viewSize = 10; // Define a suitable view size for your application
+
+                camera.left = -aspect * viewSize / 2;
+                camera.right = aspect * viewSize / 2;
+                camera.top = viewSize / 2;
+                camera.bottom = -viewSize / 2;
+                camera.updateProjectionMatrix();
+            }
+
+            // Update the renderer size to match the new window dimensions
             this.renderer.getRenderer().setSize(window.innerWidth, window.innerHeight);
         });
     }
 
     // Adds an object (entity) to the scene
-    public addObject(entity: Entity): void {
+    public addObject(entity: GameObject): void {
         entity.addToScene(this.scene.getScene());
     }
 
     // Removes an object (entity) from the scene
-    public removeObject(entity: Entity): void {
+    public removeObject(entity: GameObject): void {
         entity.removeFromScene(this.scene.getScene());
     }
 
