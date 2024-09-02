@@ -1,26 +1,23 @@
+// src/core/Kalmykia.ts
 import * as THREE from "three";
-import { Scene, Renderer, GameObject, Camera } from "./index";
-import { UpdateCallback } from "../types/UpdateCallback";
-import { KalmykiaProps } from "../types/KalmykiaProps";
+import { Scene, Renderer, Camera } from "./index";
+import { Entity } from "./subClasses/Entity"; // Entity class representing game objects
+import { Component } from "./subClasses/Component"; // Base class for all components
+import { UpdateCallback } from "../types/UpdateCallback"; // Type definition for update callbacks
+import { KalmykiaProps } from "../types/KalmykiaProps"; // Type definition for engine properties
+import { RenderSystem } from "./subClasses/systems/RenderSystem"; // System responsible for rendering entities
 
 // Main Kalmykia class, representing the core of the game engine
 export class Kalmykia {
-    // Represents the 3D scene where objects are rendered
-    private scene: Scene;
+    private scene: Scene; // Represents the 3D scene where objects are rendered
+    private renderer: Renderer; // Manages rendering the scene and camera to the screen
+    private camera: Camera; // Defines the viewpoint and projection for the scene
+    private clock: THREE.Clock; // Manages time for animations and updates within the scene
+    private updateCallbacks: UpdateCallback[] = []; // Stores functions that are called on each frame for dynamic updates
+    private entities: Entity[] = []; // List of all entities in the scene, managed by ECS
+    private systems: { update: (entities: Entity[], delta: number) => void }[] = []; // List of systems that operate on entities, managed by ECS
 
-    // Manages rendering the scene and camera to the screen
-    private renderer: Renderer;
-
-    // Defines the viewpoint and projection for the scene
-    private camera: Camera;
-
-    // Manages time for animations and updates within the scene
-    private clock: THREE.Clock;
-
-    // Stores functions that are called on each frame for dynamic updates
-    private updateCallbacks: UpdateCallback[] = [];
-
-    // Constructor to initialize the engine with a container element and optional properties
+    // Constructor initializes the engine with a container element and optional properties
     constructor(container: HTMLElement, props?: KalmykiaProps) {
         // Set up the scene with provided scene properties
         this.scene = new Scene(props?.scene);
@@ -33,6 +30,10 @@ export class Kalmykia {
 
         // Initialize the clock for tracking time deltas
         this.clock = new THREE.Clock();
+
+        // Initialize the RenderSystem with both the renderer and camera, adding it to the systems list
+        const renderSystem = new RenderSystem(this.renderer, this.scene, this.camera.getCamera());
+        this.systems.push(renderSystem);
 
         // Set up event listeners (e.g., for window resize) to adjust camera and renderer settings
         this.setupEventListeners();
@@ -49,8 +50,8 @@ export class Kalmykia {
         // Calculate the time delta since the last frame
         const delta = this.clock.getDelta();
 
-        // Call all registered update callbacks with the time delta
-        this.updateCallbacks.forEach((callback) => callback(delta));
+        // Update all systems with the current entities, allowing them to process logic
+        this.systems.forEach(system => system.update(this.entities, delta));
 
         // Render the current state of the scene from the perspective of the camera
         this.renderer.getRenderer().render(this.scene.getScene(), this.camera.getCamera());
@@ -65,15 +66,13 @@ export class Kalmykia {
             if (camera instanceof THREE.PerspectiveCamera) {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
-            }
-
+            } 
             // For OrthographicCamera or other camera types, update as needed
-            if (camera instanceof THREE.OrthographicCamera) {
-                // Optional: Adjust orthographic camera properties on resize if needed
-                // For example, update the left, right, top, and bottom properties if your design requires it
+            else if (camera instanceof THREE.OrthographicCamera) {
                 const aspect = window.innerWidth / window.innerHeight;
                 const viewSize = 10; // Define a suitable view size for your application
 
+                // Adjust orthographic camera properties on resize if needed
                 camera.left = -aspect * viewSize / 2;
                 camera.right = aspect * viewSize / 2;
                 camera.top = viewSize / 2;
@@ -86,14 +85,24 @@ export class Kalmykia {
         });
     }
 
-    // Adds an object (entity) to the scene
-    public addObject(entity: GameObject): void {
-        entity.addToScene(this.scene.getScene());
+    // Adds an entity to the ECS system
+    public addEntity(entity: Entity): void {
+        this.entities.push(entity);
     }
 
-    // Removes an object (entity) from the scene
-    public removeObject(entity: GameObject): void {
-        entity.removeFromScene(this.scene.getScene());
+    // Removes an entity from the ECS system
+    public removeEntity(entity: Entity): void {
+        this.entities = this.entities.filter(e => e.getId() !== entity.getId());
+    }
+
+    // Adds a component to a specific entity
+    public addComponentToEntity(entity: Entity, component: Component): void {
+        entity.addComponent(component);
+    }
+
+    // Registers a new system to be called on each frame update
+    public addSystem(system: { update: (entities: Entity[], delta: number) => void }): void {
+        this.systems.push(system);
     }
 
     // Registers a callback function to be called on each frame update

@@ -1,3 +1,4 @@
+// src/core/Entity.ts
 import { Component } from "./Component";
 
 let nextEntityId = 0;
@@ -27,17 +28,18 @@ export class Entity {
     }
 
     // Retrieves a component by type, cast to the correct class
-    public getComponent<T extends Component>(type: new () => T): T | undefined {
+    // Modified to accept any constructor with parameters
+    public getComponent<T extends Component>(type: { new (...args: any[]): T }): T | undefined {
         return this.components.get(type.name) as T;
     }
 
     // Checks if the entity has a component of a specific type
-    public hasComponent<T extends Component>(type: new () => T): boolean {
+    public hasComponent<T extends Component>(type: { new (...args: any[]): T }): boolean {
         return this.components.has(type.name);
     }
 
     // Removes a component and triggers the component's cleanup
-    public removeComponent<T extends Component>(type: new () => T): void {
+    public removeComponent<T extends Component>(type: { new (...args: any[]): T }): void {
         const componentName = type.name;
         const component = this.components.get(componentName);
         if (component) {
