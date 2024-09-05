@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { setupScene } from "../utils/setupScene"; // Import the setupScene utility to handle scene configuration
 import { SceneProps } from "../../types/scene/SceneProps";
 
-
 /**
  * Scene class encapsulates a Three.js scene and manages its configuration through SceneProps.
  * It utilizes utility functions to modularize the setup, ensuring that the scene is configured

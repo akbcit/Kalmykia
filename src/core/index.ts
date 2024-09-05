@@ -1,6 +1,5 @@
 // src/core/index.ts
-export { Scene } from "./subClasses/Scene";
-export { Renderer } from "./subClasses/Renderer";
-export { GameObject } from "./subClasses/GameObject";
+export { Scene } from "./parentClasses/Scene";
+export { Renderer } from "./parentClasses/Renderer";
 export { Kalmykia } from "./Kalmykia";
-export { Camera } from "./subClasses/Camera";
+export { Camera } from "./parentClasses/Camera";

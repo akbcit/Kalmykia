@@ -1,5 +1,5 @@
 // src/core/components/MeshComponent.ts
-import { Component } from "../Component"; // Base class for all components
+import { Component } from "../../parentClasses/Component"; // Base class for all components
 import * as THREE from "three"; // Import Three.js
 
 // MeshComponent class that holds a Three.js mesh object

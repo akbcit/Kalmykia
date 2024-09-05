@@ -1,7 +1,7 @@
 // src/core/systems/RenderSystem.ts
 import { Entity } from "../Entity";
-import { PositionComponent } from "../components/PositionComponent";
-import { MeshComponent } from "../components/MeshComponent";
+import { PositionComponent } from "../../derivedClasses/components/PositionComponent";
+import { MeshComponent } from "../../derivedClasses/components/MeshComponent";
 import { Renderer } from "../Renderer";
 import { Scene } from "../Scene";
 import * as THREE from "three";

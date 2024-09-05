@@ -1,11 +1,11 @@
 // src/core/Kalmykia.ts
 import * as THREE from "three";
 import { Scene, Renderer, Camera } from "./index";
-import { Entity } from "./subClasses/Entity"; // Entity class representing game objects
-import { Component } from "./subClasses/Component"; // Base class for all components
+import { Entity } from "./parentClasses/Entity"; // Entity class representing game objects
+import { Component } from "./parentClasses/Component"; // Base class for all components
 import { UpdateCallback } from "../types/UpdateCallback"; // Type definition for update callbacks
 import { KalmykiaProps } from "../types/KalmykiaProps"; // Type definition for engine properties
-import { RenderSystem } from "./subClasses/systems/RenderSystem"; // System responsible for rendering entities
+import { RenderSystem } from "./parentClasses/systems/RenderSystem"; // System responsible for rendering entities
 
 // Main Kalmykia class, representing the core of the game engine
 export class Kalmykia {

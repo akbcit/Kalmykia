@@ -1,4 +1,4 @@
-import { Component } from "../Component";
+import { Component } from "../../parentClasses/Component";
 
 export class PositionComponent extends Component {
     public x: number;
