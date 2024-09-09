@@ -8,9 +8,20 @@ export enum CameraType {
     // Add more camera types here as needed
 }
 
+export interface CameraControlsProps {
+    enabled?: boolean;
+    type?: 'orbit' | 'firstPerson' | 'fly' | 'trackball'; // Type of camera control
+    target?: THREE.Vector3; // Target position for the camera controls
+    autoRotate?: boolean; // Whether the camera should auto-rotate around the target
+    autoRotateSpeed?: number; // Speed of auto-rotation
+}
+
+// Base camera properties including controls
 export interface BaseCameraProps {
     cameraType: CameraType; // Camera type
     position?: THREE.Vector3; // Position of the camera
+    lookAt?: THREE.Vector3; // Point the camera should look at
+    controls?: CameraControlsProps; // Optional controls configuration
 }
 
 export interface PerspectiveCameraProps extends BaseCameraProps {
@@ -29,5 +40,5 @@ export interface OrthographicCameraProps extends BaseCameraProps {
     far?: number; // Far clipping plane
 }
 
-// Unified CameraProps type
+// Unified CameraProps type with controls included
 export type CameraProps = PerspectiveCameraProps | OrthographicCameraProps;

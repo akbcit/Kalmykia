@@ -1,9 +1,8 @@
 // src/core/utils/setupScene.ts
 import * as THREE from "three";
-import { setupLighting } from "./setupLighting";
-import { setupEnvironmentMap } from "./setupEnvironmentMap";
+import { setupLighting } from "./setupLighting"; // Utility for setting up lighting in the scene
+import { setupEnvironmentMap } from "./setupEnvironmentMap"; // Utility for setting up environment maps for reflections
 import { SceneProps } from "../../types/scene/SceneProps";
-
 
 /**
  * Sets up the Three.js scene with optional properties for background, fog, helpers, and lighting.
@@ -18,9 +17,7 @@ export function setupScene(scene: THREE.Scene, props?: SceneProps): THREE.Scene 
     // Set background color or texture if specified
     if (props?.backgroundColor) {
         scene.background = new THREE.Color(props.backgroundColor);
-    }
-
-    if (props?.backgroundTexture) {
+    } else if (props?.backgroundTexture) {
         scene.background = props.backgroundTexture;
     }
 
@@ -49,10 +46,16 @@ export function setupScene(scene: THREE.Scene, props?: SceneProps): THREE.Scene 
     }
 
     // Configure scene lighting using a utility function to add various lights
-    setupLighting(scene, props?.lighting);
+    if (props?.lighting) {
+        setupLighting(scene, props.lighting);
+    } else {
+        console.warn("No lighting configuration provided. The scene might appear dark.");
+    }
 
     // Set up the environment map for reflections and environmental effects
-    setupEnvironmentMap(scene, props?.environmentMap);
+    if (props?.environmentMap) {
+        setupEnvironmentMap(scene, props.environmentMap);
+    }
 
     // Return the fully configured scene
     return scene;

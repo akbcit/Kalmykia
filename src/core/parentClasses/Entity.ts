@@ -1,5 +1,7 @@
 // src/core/Entity.ts
+import { MeshComponent } from "../derivedClasses/components/MeshComponent";
 import { Component } from "./Component";
+import * as THREE from "three";
 
 // Global counter to generate unique IDs for each entity
 let nextEntityId = 0;
@@ -68,5 +70,12 @@ export class Entity {
         // Dispose of each component to release resources
         this.components.forEach((component) => component.dispose());
         this.components.clear(); // Clear the component map
+    }
+
+    // Method to get the THREE.Object3D associated with this entity, if any
+    public getObject3D(): THREE.Object3D | null {
+        // Check if the entity has a MeshComponent and return its mesh
+        const meshComponent = this.getComponent(MeshComponent); // Assuming MeshComponent is defined elsewhere
+        return meshComponent ? meshComponent.getMesh() : null;
     }
 }

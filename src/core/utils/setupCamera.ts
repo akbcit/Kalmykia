@@ -1,58 +1,64 @@
+// src/utils/setupCamera.ts
 import * as THREE from "three";
-import { CameraProps, CameraType, PerspectiveCameraProps, OrthographicCameraProps } from "../../types/camera/CameraProps";
+import { CameraProps, CameraType, OrthographicCameraProps, PerspectiveCameraProps } from "../../types/camera/CameraProps";
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 /**
- * Sets up a Three.js camera (either Perspective or Orthographic) based on CameraProps.
+ * Sets up a Three.js camera and optionally configures controls based on CameraProps.
  *
  * @param props - CameraProps object containing configuration options.
- * @returns The configured Three.js camera.
+ * @param domElement - The DOM element to attach the controls (if applicable).
+ * @returns The configured Three.js camera and optional controls.
  */
-export function setupCamera(props: CameraProps): THREE.Camera {
+export function setupCamera(props: CameraProps, domElement?: HTMLElement): { camera: THREE.Camera, controls?: OrbitControls } {
     let camera: THREE.Camera;
 
-    switch (props.cameraType) {
-        case CameraType.Perspective: {
-            // Assert props as PerspectiveCameraProps to access specific properties
-            const perspectiveProps = props as PerspectiveCameraProps;
+    // Initialize the appropriate camera type
+    if (props.cameraType === CameraType.Perspective) {
 
-            // Setup PerspectiveCamera
-            camera = new THREE.PerspectiveCamera(
-                perspectiveProps.fov || 75,
-                perspectiveProps.aspect || window.innerWidth / window.innerHeight,
-                perspectiveProps.near || 0.1,
-                perspectiveProps.far || 1000
-            );
-            break;
-        }
+        // Cast props to PerspectiveCameraProps
+        const perspectiveProps = props as PerspectiveCameraProps;
 
-        case CameraType.Orthographic: {
-            // Assert props as OrthographicCameraProps to access specific properties
-            const orthographicProps = props as OrthographicCameraProps;
-
-            // Setup OrthographicCamera
-            camera = new THREE.OrthographicCamera(
-                orthographicProps.left || -1,
-                orthographicProps.right || 1,
-                orthographicProps.top || 1,
-                orthographicProps.bottom || -1,
-                orthographicProps.near || 0.1,
-                orthographicProps.far || 1000
-            );
-            break;
-        }
-
-        // Add more camera setups here as needed
-
-        default:
-            throw new Error("Unsupported camera type");
-    }
-
-    // Set the camera's position, defaulting if not specified
-    if (props.position) {
-        camera.position.copy(props.position);
+        camera = new THREE.PerspectiveCamera(
+            perspectiveProps.fov || 75,
+            perspectiveProps.aspect || window.innerWidth / window.innerHeight,
+            perspectiveProps.near || 0.1,
+            perspectiveProps.far || 1000
+        );
+    } else if (props.cameraType === CameraType.Orthographic) {
+        // Cast props to OrthographicCameraProps
+        const orthographicProps = props as OrthographicCameraProps;
+        const aspect = window.innerWidth / window.innerHeight;
+        const viewSize = 10; // Default view size for Orthographic camera
+        camera = new THREE.OrthographicCamera(
+            orthographicProps.left || -aspect * viewSize / 2,
+            orthographicProps.right || aspect * viewSize / 2,
+            orthographicProps.top || viewSize / 2,
+            orthographicProps.bottom || -viewSize / 2,
+            props.near || 0.1,
+            props.far || 1000
+        );
     } else {
-        camera.position.set(0, 0, 5); // Default position
+        throw new Error("Unsupported camera type");
     }
 
-    return camera;
+    // Set the camera's position and look at the specified target
+    camera.position.copy(props.position || new THREE.Vector3(0, 0, 5));
+    camera.lookAt(props.lookAt || new THREE.Vector3(0, 0, 0));
+
+    let controls: OrbitControls | undefined;
+
+    // Initialize controls if specified
+    if (props.controls && domElement) {
+        controls = new OrbitControls(camera, domElement);
+
+        // Apply controls settings
+        controls.target.copy(props.controls.target || props.lookAt || new THREE.Vector3(0, 0, 0));
+        controls.autoRotate = props.controls.autoRotate || false;
+        controls.autoRotateSpeed = props.controls.autoRotateSpeed || 2.0;
+        controls.enabled = props.controls.enabled ?? true;
+        controls.update();
+    }
+
+    return { camera, controls };
 }

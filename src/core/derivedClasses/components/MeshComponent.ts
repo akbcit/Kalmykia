@@ -1,4 +1,4 @@
-// src/core/components/MeshComponent.ts
+// src/core/derivedClasses/components/MeshComponent.ts
 import { Component } from "../../parentClasses/Component"; // Base class for all components
 import * as THREE from "three"; // Import Three.js
 
@@ -10,6 +10,11 @@ export class MeshComponent extends Component {
     constructor(geometry: THREE.BufferGeometry, material: THREE.Material | THREE.Material[]) {
         super(); // Call the base Component constructor
         this.mesh = new THREE.Mesh(geometry, material); // Create a new mesh with the provided geometry and material
+    }
+
+    // Method to get the mesh object
+    public getMesh(): THREE.Mesh {
+        return this.mesh;
     }
 
     // Method to update the mesh properties, if necessary
@@ -25,7 +30,7 @@ export class MeshComponent extends Component {
 
         // Dispose of the mesh material(s), handling both single material and array of materials
         if (Array.isArray(this.mesh.material)) {
-            // If material is an array, dispose each material in the array
+            // If material is an array, dispose of each material in the array
             this.mesh.material.forEach(material => material.dispose());
         } else {
             // If material is a single instance, dispose directly
