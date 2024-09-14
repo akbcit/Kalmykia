@@ -6,7 +6,10 @@ import { createAmbientLight, createCube, createDirectionalLight } from "./utils/
 import { Scene } from "./core/parentClasses/Scene";
 import { basicMaterial, lambertMaterial, phongMaterial, standardMaterial, toonMaterial } from "./materials/materials";
 import { MeshComponent } from "./core/derivedClasses/components/MeshComponent";
-import { TerrainSystem } from "./core/parentClasses/systems/TerrainSystem";
+import { RenderSystem } from "./core/parentClasses/systems/RenderSystem";
+import { Terrain } from "./core/derivedClasses/entites/Terrain";
+import { createResizeListener } from "./core/eventListeners/resizeListener";
+import { createPanKeyListener } from "./core/eventListeners/panKeyListener";
 
 window.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('app') as HTMLElement;
@@ -32,6 +35,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 type: "orbit",
                 target: new THREE.Vector3(0, 0, 0),
                 autoRotate: false,
+                minPolarAngle: 0, // Prevent going below horizon
+                maxPolarAngle: Math.PI / 2, // Allow looking straight down
+                minDistance: 5, // Minimum zoom distance
+                maxDistance: 50, // Maximum zoom distance
             }
         }
     });
@@ -46,8 +53,30 @@ window.addEventListener('DOMContentLoaded', () => {
     engine.addScene('main', mainScene);
     engine.switchScene('main'); // Switch to the main scene
 
+    const cameraInstance = engine.getCameraInstance();  
+    const threeCamera = cameraInstance.getCamera() 
+    const controls = cameraInstance.getControls();  
+
+    const resizeListenerConfig = createResizeListener(threeCamera, engine.getRenderer());
+    engine.addEventListener(resizeListenerConfig); 
+
+    // Register the keyboard panning listener
+    if (controls) {
+        console.log("hiii con")
+        const panKeyListenerConfig = createPanKeyListener(controls);
+        engine.addEventListener(panKeyListenerConfig);
+    }
+    
     // Initialize the TerrainSystem and add it to the main scene
-    const terrainSystem = new TerrainSystem(engine.getRenderer(), mainScene, engine.getCamera());
+    const renderSystem = new RenderSystem(engine.getRenderer(), mainScene, threeCamera);
+
+    engine.addSystem(renderSystem);
+
+    // Instantiate terrain
+    const terrain = new Terrain();
+
+    // Add terrain to the scene
+    mainScene.addEntity(terrain);
 
     // Create and add GameObjects (cubes) to the scene
     const basicCube = createCube(new THREE.Vector3(-6, 0, 0), basicMaterial);
@@ -65,8 +94,9 @@ window.addEventListener('DOMContentLoaded', () => {
     mainScene.addEntity(directionalLight);
     mainScene.addEntity(ambientLight);
 
-    // Register an update callback to rotate all cubes in the scene
+    // Register an update callback to rotate only the cubes in the scene
     mainScene.registerUpdateCallback((delta: number) => {
+        // Assuming the terrain is not part of this array
         [basicCube, standardCube, phongCube, toonCube, lambertCube].forEach(entity => {
             const meshComponent = entity.getComponent(MeshComponent);
             if (meshComponent) {

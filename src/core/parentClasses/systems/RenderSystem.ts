@@ -29,18 +29,15 @@ export class RenderSystem {
             // Retrieve PositionComponent and MeshComponent from the entity
             const position = entity.getComponent(PositionComponent);
             const meshComponent = entity.getComponent(MeshComponent);
-    
-            // Check for PositionComponent and MeshComponent to update mesh position and rotation
+
+            // Check for PositionComponent and MeshComponent to update mesh position
             if (position instanceof PositionComponent && meshComponent instanceof MeshComponent) {
                 // Update mesh position based on PositionComponent
                 meshComponent.mesh.position.set(position.x, position.y, position.z);
 
-                // Optional: Apply rotation or other transformations
-                meshComponent.mesh.rotation.y += delta * 0.1; // Example rotation logic
-
                 // Add mesh to the scene if not already present
                 if (!this.scene.getScene().children.includes(meshComponent.mesh)) {
-                     this.scene.getScene().add(meshComponent.mesh);
+                    this.scene.getScene().add(meshComponent.mesh);
                 }
             }
 
@@ -51,7 +48,7 @@ export class RenderSystem {
             if (lightComponent instanceof LightComponent) {
                 // Add light to the scene if not already present
                 if (!this.scene.getScene().children.includes(lightComponent.light)) {
-                     this.scene.getScene().add(lightComponent.light);
+                    this.scene.getScene().add(lightComponent.light);
                 }
             }
         });

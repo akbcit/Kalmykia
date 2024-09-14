@@ -1,7 +1,6 @@
 // src/types/KalmykiaProps.ts
 import { ScreenProps } from "./screen/ScreenProps";
-import { CameraProps } from "./camera/CameraProps";
-import { CameraControlsProps } from "./camera/CameraControlsProps";
+import { CameraControlsProps, CameraProps } from "./camera/CameraProps";
 import { PhysicsProps } from "./physics/PhysicsProps";
 import { SceneProps } from "./scene/SceneProps";  // Import SceneProps
 

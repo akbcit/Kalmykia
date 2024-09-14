@@ -19,8 +19,8 @@ export class MeshComponent extends Component {
 
     // Method to update the mesh properties, if necessary
     public update(delta: number): void {
-        // Example: Rotate the mesh over time or other transformations
-        this.mesh.rotation.y += delta * 0.5; // Rotate around the Y-axis
+        // Core update logic; this can be expanded as needed without specific example transformations
+        // For now, this can be left empty or used for general updates relevant to the mesh state
     }
 
     // Clean up any resources used by the mesh when the component is disposed

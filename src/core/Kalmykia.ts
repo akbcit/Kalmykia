@@ -7,14 +7,16 @@ import { RenderSystem } from "./parentClasses/systems/RenderSystem";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { CameraProps, CameraType } from "../types/camera/CameraProps";
 import { SceneManager } from "./SceneManager";
+import { EventListenerConfig } from "../types/eventListeners/EventListenerConfig";
 
 export class Kalmykia {
-    private sceneManager: SceneManager; 
-    private renderer: Renderer; 
-    private camera: Camera; 
-    private clock: THREE.Clock; 
+    private sceneManager: SceneManager;
+    private renderer: Renderer;
+    private camera: Camera;
+    private clock: THREE.Clock;
     private systems: RenderSystem[] = []; // Render systems that operate on entities
-    private cameraControls: OrbitControls | null = null; 
+    private cameraControls: OrbitControls | null = null;
+    private eventListeners = new Map<string, EventListenerConfig>();
 
     constructor(container: HTMLElement, props?: KalmykiaProps) {
         this.sceneManager = new SceneManager();
@@ -32,25 +34,10 @@ export class Kalmykia {
             },
         };
 
-        this.camera = new Camera(props?.camera || defaultCameraProps);
+        // Initialize camera using Camera class which internally calls setupCamera
+        this.camera = new Camera(props?.camera || defaultCameraProps, this.renderer.getRenderer().domElement);
         this.clock = new THREE.Clock();
-        this.setupEventListeners();
-        this.initializeCameraControls(props?.camera);
         this.animate();
-    }
-
-    private initializeCameraControls(cameraProps?: CameraProps): void {
-        const camera = this.camera.getCamera();
-        const domElement = this.renderer.getRenderer().domElement;
-
-        if (cameraProps?.controls && cameraProps.controls.type === 'orbit') {
-            this.cameraControls = new OrbitControls(camera, domElement);
-            this.cameraControls.target.copy(cameraProps.lookAt || cameraProps.controls.target || new THREE.Vector3(0, 0, 0));
-            this.cameraControls.autoRotate = cameraProps.controls.autoRotate || false;
-            this.cameraControls.autoRotateSpeed = cameraProps.controls.autoRotateSpeed || 2.0;
-            this.cameraControls.enabled = cameraProps.controls.enabled ?? true;
-            this.cameraControls.update();
-        }
     }
 
     private animate = (): void => {
@@ -71,25 +58,29 @@ export class Kalmykia {
         }
     };
 
-    private setupEventListeners(): void {
-        window.addEventListener('resize', () => {
-            const camera = this.camera.getCamera();
+    // Add event listeners and register them by ID
+    public addEventListener<E extends Event>(config: EventListenerConfig<E>): void {
+        const id = config.id || `${config.type}-${Date.now()}`; // Generate a unique ID if none provided
 
-            if (camera instanceof THREE.PerspectiveCamera) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-            } else if (camera instanceof THREE.OrthographicCamera) {
-                const aspect = window.innerWidth / window.innerHeight;
-                const viewSize = 10;
-                camera.left = -aspect * viewSize / 2;
-                camera.right = aspect * viewSize / 2;
-                camera.top = viewSize / 2;
-                camera.bottom = -viewSize / 2;
-                camera.updateProjectionMatrix();
-            }
+        // Register the event listener with correct type casting
+        config.target.addEventListener(config.type, config.listener as EventListenerOrEventListenerObject);
 
-            this.renderer.getRenderer().setSize(window.innerWidth, window.innerHeight);
-        });
+        // Store the configuration in the map
+        this.eventListeners.set(id, config as EventListenerConfig<any>);
+
+    }
+
+    // Remove event listeners by ID
+    public removeEventListener(id: string): void {
+        const config = this.eventListeners.get(id); // Retrieve the listener configuration by ID
+        if (config) {
+            // Remove the event listener with correct type casting
+            config.target.removeEventListener(config.type, config.listener as EventListenerOrEventListenerObject);
+
+            this.eventListeners.delete(id); // Remove the configuration from the map
+        } else {
+            console.warn(`Event listener with ID ${id} not found.`); // Warn if the ID is not found
+        }
     }
 
     public addScene(name: string, scene: Scene): void {
@@ -105,7 +96,12 @@ export class Kalmykia {
         return this.renderer;
     }
 
-    public getCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
-        return this.camera.getCamera();  
+    public getCameraInstance(): Camera {
+        return this.camera;
+    }
+
+    // Make the addSystem method public to allow adding systems from outside
+    public addSystem(system: RenderSystem): void {
+        this.systems.push(system);
     }
 }
