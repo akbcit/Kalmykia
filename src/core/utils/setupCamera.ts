@@ -10,8 +10,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
  * @param domElement - The DOM element to attach the controls (if applicable).
  * @returns The configured Three.js camera and optional controls.
  */
-export function setupCamera(props: CameraProps, domElement?: HTMLElement): { camera: THREE.Camera, controls?: OrbitControls } {
-    let camera: THREE.Camera;
+export function setupCamera(props: CameraProps, domElement?: HTMLElement): { camera: THREE.PerspectiveCamera | THREE.OrthographicCamera, controls?: OrbitControls } {
+    let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
 
     // Initialize the appropriate camera type
     if (props.cameraType === CameraType.Perspective) {

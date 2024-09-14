@@ -99,4 +99,13 @@ export class Kalmykia {
     public switchScene(name: string): void {
         this.sceneManager.switchScene(name);
     }
+
+    // Add getter methods to expose renderer and camera
+    public getRenderer(): Renderer {
+        return this.renderer;
+    }
+
+    public getCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
+        return this.camera.getCamera();  
+    }
 }

@@ -6,6 +6,7 @@ import { createAmbientLight, createCube, createDirectionalLight } from "./utils/
 import { Scene } from "./core/parentClasses/Scene";
 import { basicMaterial, lambertMaterial, phongMaterial, standardMaterial, toonMaterial } from "./materials/materials";
 import { MeshComponent } from "./core/derivedClasses/components/MeshComponent";
+import { TerrainSystem } from "./core/parentClasses/systems/TerrainSystem";
 
 window.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('app') as HTMLElement;
@@ -44,6 +45,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // Add the scene to the engine and switch to it
     engine.addScene('main', mainScene);
     engine.switchScene('main'); // Switch to the main scene
+
+    // Initialize the TerrainSystem and add it to the main scene
+    const terrainSystem = new TerrainSystem(engine.getRenderer(), mainScene, engine.getCamera());
 
     // Create and add GameObjects (cubes) to the scene
     const basicCube = createCube(new THREE.Vector3(-6, 0, 0), basicMaterial);

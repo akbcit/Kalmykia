@@ -5,7 +5,7 @@ import { CameraProps, CameraType, OrthographicCameraProps, PerspectiveCameraProp
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export class Camera {
-    private camera: THREE.Camera;
+    private camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
     private controls?: OrbitControls;
 
     constructor(props: CameraProps, domElement?: HTMLElement) {
@@ -14,7 +14,8 @@ export class Camera {
         this.controls = controls;
     }
 
-    public getCamera(): THREE.Camera {
+    // Change the return type to match exactly what is needed
+    public getCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
         return this.camera;
     }
 
@@ -58,7 +59,7 @@ export class Camera {
             }
             this.controls.autoRotate = props.controls?.autoRotate || false;
             this.controls.autoRotateSpeed = props.controls?.autoRotateSpeed || 2.0;
-            this.controls.enabled = props.controls?.enabled ?? true;
+            this.controls.enabled = props.controls?.enabled ?? true; 
         }
     }
 }

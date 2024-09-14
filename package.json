@@ -13,11 +13,13 @@
   "license": "ISC",
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "simplex-noise": "^4.0.3",
     "three": "^0.168.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^3.0.0",
+    "@types/noisejs": "^0.0.31",
     "@types/three": "^0.168.0",
+    "@vitejs/plugin-react": "^3.0.0",
     "typescript": "^5.5.4",
     "vite": "^4.5.0"
   }

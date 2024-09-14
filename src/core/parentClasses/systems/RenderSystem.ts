@@ -18,6 +18,11 @@ export class RenderSystem {
         this.camera = camera;
     }
 
+    // Method to expose the scene to subclasses
+    protected getScene(): Scene {
+        return this.scene;
+    }
+
     // The update method, called every frame to update and render entities
     public update(entities: Entity[], delta: number): void {
         entities.forEach(entity => {
