@@ -1,5 +1,5 @@
 // src/core/SceneManager.ts
-
+import { SceneProps } from "../types/scene/SceneProps";
 import { Scene } from "./parentClasses/Scene";
 
 export class SceneManager {
@@ -9,6 +9,12 @@ export class SceneManager {
     // Adds a scene to the manager
     public addScene(name: string, scene: Scene): void {
         this.scenes.set(name, scene);
+    }
+
+    // Creates and adds a new scene using SceneProps
+    public createScene(name: string, props?: SceneProps): void {
+        const scene = new Scene(props);  // Creates a new Scene instance using the provided SceneProps
+        this.addScene(name, scene);  // Adds the new scene to the SceneManager
     }
 
     // Switches to a new scene by name

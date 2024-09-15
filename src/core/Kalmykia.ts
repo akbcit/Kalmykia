@@ -10,13 +10,14 @@ import { SceneManager } from "./SceneManager";
 import { EventListenerConfig } from "../types/eventListeners/EventListenerConfig";
 
 export class Kalmykia {
-    private sceneManager: SceneManager;
+    public sceneManager: SceneManager;
     private renderer: Renderer;
     private camera: Camera;
     private clock: THREE.Clock;
     private systems: RenderSystem[] = []; // Render systems that operate on entities
     private cameraControls: OrbitControls | null = null;
     private eventListeners = new Map<string, EventListenerConfig>();
+    private isRunning: boolean = false;
 
     constructor(container: HTMLElement, props?: KalmykiaProps) {
         this.sceneManager = new SceneManager();
@@ -37,7 +38,6 @@ export class Kalmykia {
         // Initialize camera using Camera class which internally calls setupCamera
         this.camera = new Camera(props?.camera || defaultCameraProps, this.renderer.getRenderer().domElement);
         this.clock = new THREE.Clock();
-        this.animate();
     }
 
     private animate = (): void => {
@@ -57,6 +57,22 @@ export class Kalmykia {
             console.warn('No current scene set in SceneManager.');
         }
     };
+
+    // Start method to begin the rendering loop
+    public start(): void {
+        if (this.isRunning) {
+            console.warn('Engine is already running.');
+            return;
+        }
+
+        if (!this.sceneManager.getCurrentScene()) {
+            console.error('No scene set. Please add and switch to a scene before starting the engine.');
+            return;
+        }
+
+        this.isRunning = true;
+        this.animate(); // Kick off the animation loop
+    }
 
     // Add event listeners and register them by ID
     public addEventListener<E extends Event>(config: EventListenerConfig<E>): void {

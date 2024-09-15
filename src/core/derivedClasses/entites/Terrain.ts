@@ -1,42 +1,75 @@
 // src/entities/Terrain.ts
-import * as THREE from "three";
-import { Entity } from "../../parentClasses/Entity";
-import { MeshComponent } from "../components/MeshComponent";
-import { createNoise2D } from "simplex-noise"; // Importing Simplex noise function
+import * as THREE from 'three';
+import { PlaneGeometry } from './geometries/primitives';
+import { StandardMaterial } from './materials'; // Adjust the import path as needed
+import { Entity } from '../../parentClasses/Entity';
+import { MeshComponent } from '../components/MeshComponent';
+
+interface TerrainParams {
+  width?: number;
+  height?: number;
+  widthSegments?: number;
+  heightSegments?: number;
+  material?: THREE.Material; // Accepts any THREE.Material, including custom materials
+  flatShading?: boolean; // Toggle for flat shading
+}
+
+// Type guard to check if the material supports flatShading
+function supportsFlatShading(
+  material: THREE.Material
+): material is
+  | THREE.MeshStandardMaterial
+  | THREE.MeshLambertMaterial
+  | THREE.MeshPhongMaterial {
+  return (
+    material instanceof THREE.MeshStandardMaterial ||
+    material instanceof THREE.MeshLambertMaterial ||
+    material instanceof THREE.MeshPhongMaterial
+  );
+}
 
 export class Terrain extends Entity {
-  constructor() {
-    super();
+  private mesh: THREE.Mesh;
 
-    // Create a plane geometry for the terrain
-    const geometry = new THREE.PlaneGeometry(100, 100, 50, 50);
-    geometry.rotateX(-Math.PI / 2); // Rotate to make it horizontal
+  constructor({
+    width = 100,
+    height = 100,
+    widthSegments = 50,
+    heightSegments = 50,
+    material = new StandardMaterial({ color: 0x228b22 }), // Default to a custom StandardMaterial
+    flatShading = false,
+  }: TerrainParams) {
+    super(); // Call the Entity constructor
 
-    // Create noise function for height variation
-    const noise2D = createNoise2D(Math.random);
-
-    // Modify the geometry vertices to add height variation
-    const positionAttribute = geometry.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < positionAttribute.count; i++) {
-      const x = positionAttribute.getX(i);
-      const z = positionAttribute.getZ(i);
-      const height = noise2D(x / 10, z / 10); // Adjust scale for desired detail
-      positionAttribute.setY(i, height * 5); // Set the new height, scale as needed
-    }
-    positionAttribute.needsUpdate = true; // Mark the attribute for update
-    geometry.computeVertexNormals(); // Recompute normals for correct lighting
-
-    // Create a standard material for the terrain with some properties
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x228b22, // Green color for grass-like appearance
-      wireframe: false, // Set to true if you want to debug the terrain mesh
-      flatShading: true, // Flat shading for a more stylized look
+    // Create a plane geometry with the given dimensions and segments
+    const geometry = new PlaneGeometry({
+      width,
+      height,
+      widthSegments,
+      heightSegments,
     });
 
-    // Create a MeshComponent with the geometry and material
-    const meshComponent = new MeshComponent(geometry, material);
+    geometry.rotateX(-Math.PI / 2); // Rotate to make it horizontal, aligned with the XZ plane
 
-    // Add the MeshComponent to the Terrain entity
-    this.addComponent(meshComponent);
+    // Apply flat shading if the material supports it
+    if (flatShading && supportsFlatShading(material)) {
+      material.flatShading = true;
+      material.needsUpdate = true; // Update the material to reflect changes
+    }
+
+    // Create the Mesh with geometry and material
+    this.mesh = new THREE.Mesh(geometry, material);
+
+    // Add a MeshComponent to the Terrain entity
+    const meshComponent = new MeshComponent(this.mesh.geometry, this.mesh.material);
+    this.addComponent(meshComponent); // Add MeshComponent to the entity
+
+    // Optional: Log details for debugging
+    (geometry as PlaneGeometry).logDetails();
+  }
+
+  // Method to expose the THREE.Object3D (mesh)
+  public getObject3D(): THREE.Object3D {
+    return this.mesh;
   }
 }

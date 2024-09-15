@@ -18,12 +18,6 @@ export interface KalmykiaProps {
   screen?: ScreenProps;
 
   /**
-   * Configures the 3D scene using SceneProps, which includes fog, helpers, lighting, 
-   * environment maps, and other scene-related settings.
-   */
-  scene?: SceneProps;  // Use SceneProps here
-
-  /**
    * Configures camera controls, such as orbit, first-person, fly, or trackball controls.
    * Defines the type of control, target, auto-rotation, and other behaviors for navigating the scene.
    */
