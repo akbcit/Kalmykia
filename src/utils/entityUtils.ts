@@ -4,15 +4,23 @@ import * as THREE from 'three';
 import { MeshComponent } from '../core/derivedClasses/components/MeshComponent';
 import { CubeGeometry } from '../core/derivedClasses/entites/geometries/primitives';
 import { LightObject } from '../core/derivedClasses/entites/LightObject';
+import { GameObject } from '../core/derivedClasses/entites/GameObject';
   
-/**
- * Creates a generic entity with a mesh component, using the provided geometry and material.
- * 
- * @param position - The position of the entity in the scene.
- * @param material - The material to apply to the mesh.
- * @param geometry - The geometry of the mesh, defaults to a cube if not provided.
- * @returns An entity with the specified mesh component.
- */
+export function createMeshGameObject(
+  position: THREE.Vector3,
+  material: THREE.Material,
+  geometry: THREE.BufferGeometry = new THREE.BoxGeometry(1, 1, 1) // Default to a basic cube geometry
+): GameObject {
+  const meshComponent = new MeshComponent(geometry, material);
+  meshComponent.getMesh().position.copy(position);
+
+  // Create a GameObject and add the MeshComponent
+  const gameObject = new GameObject(meshComponent.getMesh()); // Pass the mesh directly to GameObject
+  gameObject.addComponent(meshComponent);
+
+  return gameObject;
+}
+
 export function createMeshEntity(
     position: THREE.Vector3,
     material: THREE.Material,

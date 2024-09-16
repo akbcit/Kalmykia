@@ -5,10 +5,11 @@ import { CameraProps, CameraType } from '../types/camera/CameraProps';
 import { createResizeListener } from './eventListeners/resizeListener';
 import { createPanKeyListener } from './eventListeners/panKeyListener';
 import { RenderSystem } from './parentClasses/systems/RenderSystem';
-import { Terrain } from './derivedClasses/entites/Terrain';
+import { Terrain, TerrainParams } from './derivedClasses/entites/Terrain';
 import { LightObject } from './derivedClasses/entites/LightObject';
 import { createAmbientLight, createDirectionalLight } from '../utils/entityUtils';
 import { Entity } from './parentClasses/Entity';
+import { GameObject } from './derivedClasses/entites/GameObject';
 
 export class KalmykiaBuilder {
     private engine: Kalmykia;
@@ -78,16 +79,16 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addTerrain(params: {
-        width?: number;
-        height?: number;
-        widthSegments?: number;
-        heightSegments?: number;
-        material?: THREE.Material;
-        flatShading?: boolean;
-    }): KalmykiaBuilder {
+    addGameObject(mesh: THREE.Mesh): KalmykiaBuilder {
         if (this.scene) {
-            const terrain = new Terrain(params);
+            const gameObject = new GameObject(mesh);
+            this.scene.addEntity(gameObject);
+        }
+        return this;
+    }
+
+    addTerrain(terrain: Terrain): KalmykiaBuilder {
+        if (this.scene) {
             this.scene.addEntity(terrain);
         }
         return this;
