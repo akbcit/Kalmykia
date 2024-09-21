@@ -8,8 +8,8 @@ export class CustomTerrainMaterial extends THREE.ShaderMaterial {
     const MAX_COLORS = 10;
 
     const defaultColors = [
-      new THREE.Color(0x00ff00), // Default Green
-      new THREE.Color(0xffff00)  // Default Yellow
+      new THREE.Color(0x00ff00), 
+      new THREE.Color(0xffff00)  
     ];
 
     const validColors = (colors.length >= 2 && colors.every(color => color instanceof THREE.Color))

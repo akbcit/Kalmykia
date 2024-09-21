@@ -1,10 +1,12 @@
 // src/entities/Terrain.ts
 import * as THREE from 'three';
 import { PlaneGeometry } from './geometries/primitives';
-import { StandardMaterial } from './materials'; // Adjust the import path as needed
 import { Entity } from '../../parentClasses/Entity';
 import { MeshComponent } from '../components/MeshComponent';
 import { createNoise2D } from 'simplex-noise';
+import { MaterialFactory } from './materials/MaterialFactory';
+
+const materialFactory = new MaterialFactory();
 
 export interface TerrainParams {
   width?: number;
@@ -40,7 +42,7 @@ export class Terrain extends Entity {
     height = 100,
     widthSegments = 50,
     heightSegments = 50,
-    material = new StandardMaterial({ color: 0x228b22 }), // Default to a custom StandardMaterial
+    material = materialFactory.createStandardMaterial({color:0x228b22}),
     flatShading = false,
     scale = 0, // Default to 0 for flat terrain
     detail = 1, // Detail level for Perlin noise
