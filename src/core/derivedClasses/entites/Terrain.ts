@@ -61,7 +61,7 @@ export class Terrain extends Entity {
     return geometry;
   }
 
-  // Extract the logic of applying noise to terrain vertices into its own method
+  // the logic of applying noise to terrain vertices
   private applyNoiseToTerrain(geometry: THREE.PlaneGeometry, noiseScale: number, heightFactor: number): void {
     const positionAttribute = geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < positionAttribute.count; i++) {
@@ -74,14 +74,14 @@ export class Terrain extends Entity {
     positionAttribute.needsUpdate = true; // Mark for update
   }
 
-  // Extract mesh creation into its own method
+  // mesh creation
   private createMesh(geometry: THREE.BufferGeometry, material: THREE.Material, receiveShadow: boolean): THREE.Mesh {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.receiveShadow = receiveShadow;
     return mesh;
   }
 
-  // Extract adding the mesh component into its own method
+  // adding the mesh component to Terrain Entity
   private addMeshComponent(mesh: THREE.Mesh): void {
     const meshComponent = new MeshComponent(mesh.geometry, mesh.material);
     this.addComponent(meshComponent);
