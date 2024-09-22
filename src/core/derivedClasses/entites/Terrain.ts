@@ -13,14 +13,14 @@ export interface TerrainParams {
   widthSegments?: number;
   heightSegments?: number;
   material?: THREE.Material;
-  noiseScale?: number; // Scale for Simplex noise, like in TerrainSystem
-  heightFactor?: number; // Controls height intensity
+  noiseScale?: number;  
+  heightFactor?: number;  
   receiveShadow?: boolean;
 }
 
 export class Terrain extends Entity {
   private mesh: THREE.Mesh;
-  private noise2D: (x: number, y: number) => number; // Simplex noise function
+  private noise2D: (x: number, y: number) => number;  
 
   constructor({
     width = 100,
@@ -28,47 +28,62 @@ export class Terrain extends Entity {
     widthSegments = 50,
     heightSegments = 50,
     material = materialFactory.createStandardMaterial({ color: 0x228b22 }),
-    noiseScale = 10, // Similar to TerrainSystem's noise scaling
-    heightFactor = 10, // Controls height intensity (like TerrainSystem's height)
-    receiveShadow = true, // Default to receiving shadows
+    noiseScale = 10,
+    heightFactor = 10,
+    receiveShadow = true,
   }: TerrainParams) {
     super(); // Call the Entity constructor
+    this.noise2D = this.initializeNoise(); // Extract noise initialization
 
-    this.noise2D = createNoise2D(Math.random); // Initialize Simplex noise with a random seed
+    const geometry = this.createTerrainGeometry(width, height, widthSegments, heightSegments);
+    this.applyNoiseToTerrain(geometry, noiseScale, heightFactor); // Apply noise in a separate method
+    geometry.computeVertexNormals(); // Compute normals
 
+    this.mesh = this.createMesh(geometry, material, receiveShadow); // Create mesh
+
+    this.addMeshComponent(this.mesh); // Add mesh component
+  }
+
+  // Extract noise initialization into its own method
+  private initializeNoise(): (x: number, y: number) => number {
+    return createNoise2D(Math.random); // Simplex noise with random seed
+  }
+
+  // Extract terrain geometry creation into its own method
+  private createTerrainGeometry(width: number, height: number, widthSegments: number, heightSegments: number): THREE.PlaneGeometry {
     const geometry = new PlaneGeometry({
       width,
       height,
       widthSegments,
       heightSegments,
     });
+    geometry.rotateX(-Math.PI / 2); // Rotate to make it horizontal
+    return geometry;
+  }
 
-    geometry.rotateX(-Math.PI / 2); // Rotate to make it horizontal, aligned with the XZ plane
-
-    // Apply the noise to the terrain vertices, similar to TerrainSystem
+  // Extract the logic of applying noise to terrain vertices into its own method
+  private applyNoiseToTerrain(geometry: THREE.PlaneGeometry, noiseScale: number, heightFactor: number): void {
     const positionAttribute = geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < positionAttribute.count; i++) {
       const x = positionAttribute.getX(i);
       const z = positionAttribute.getZ(i);
-      let heightValue = this.noise2D(x / noiseScale, z / noiseScale); // Use noise with scaling
-      heightValue *= heightFactor; // Apply height scaling (like in TerrainSystem)
-
-      // Set the Y position (height) of the vertex
+      let heightValue = this.noise2D(x / noiseScale, z / noiseScale);
+      heightValue *= heightFactor;
       positionAttribute.setY(i, heightValue);
     }
+    positionAttribute.needsUpdate = true; // Mark for update
+  }
 
-    // Mark the position attribute as updated to reflect the changes in the mesh
-    positionAttribute.needsUpdate = true;
+  // Extract mesh creation into its own method
+  private createMesh(geometry: THREE.BufferGeometry, material: THREE.Material, receiveShadow: boolean): THREE.Mesh {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.receiveShadow = receiveShadow;
+    return mesh;
+  }
 
-    // Recalculate normals for proper lighting
-    geometry.computeVertexNormals();
-
-    // Create the mesh and apply the material
-    this.mesh = new THREE.Mesh(geometry, material);
-    this.mesh.receiveShadow = receiveShadow; // Set the mesh to receive shadows
-
-    // Add MeshComponent to the entity
-    const meshComponent = new MeshComponent(this.mesh.geometry, this.mesh.material);
+  // Extract adding the mesh component into its own method
+  private addMeshComponent(mesh: THREE.Mesh): void {
+    const meshComponent = new MeshComponent(mesh.geometry, mesh.material);
     this.addComponent(meshComponent);
   }
 

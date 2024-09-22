@@ -5,7 +5,6 @@ import { CameraType } from './types/camera/CameraProps';
 import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { createMeshGameObject } from './utils/entityUtils';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
-import { createSimplexNoiseGenerator } from './utils/noise/simplexNoise';
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
 
@@ -14,6 +13,7 @@ const materialFactory = new MaterialFactory();
 const doubleSidedPlaneMaterial = materialFactory.createStandardMaterial({ side: THREE.DoubleSide});
 
 window.addEventListener('DOMContentLoaded', () => {
+
     const container = document.getElementById('app') as HTMLElement;
 
 
@@ -23,17 +23,17 @@ window.addEventListener('DOMContentLoaded', () => {
         height: 100,
         widthSegments: 256,
         heightSegments: 256,
-        material: doubleSidedPlaneMaterial, // Use colon (:) instead of equal sign
-        noiseScale: 10, // Similar to TerrainSystem's noise scaling
-        heightFactor: 10, // Controls height intensity (like TerrainSystem's height)
-        receiveShadow: true, // Default to receiving shadows
+        material: doubleSidedPlaneMaterial,  
+        noiseScale: 10,  
+        heightFactor: 10,  
+        receiveShadow: true,  
     })
 
     // Initialize the Three.js engine
     const engine = new KalmykiaBuilder(container)
         .setCamera({
             cameraType: CameraType.Perspective,
-            position: new THREE.Vector3(0, 2, 20),
+            position: new THREE.Vector3(0, 23, 50),
             fov: 60,
             aspect: window.innerWidth / window.innerHeight,
             near: 0.1,
