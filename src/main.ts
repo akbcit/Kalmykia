@@ -1,16 +1,17 @@
 // src/index.ts
 import * as THREE from 'three';
-import { Terrain } from './core/derivedClasses/entites/Terrain';
+import { TerrainPlane } from './core/derivedClasses/entites/TerrainPlane';
 import { CameraType } from './types/camera/CameraProps';
 import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { createMeshGameObject } from './utils/entityUtils';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
+import { diamondSquareFunction, fractalBrownianMotion, ridgedMultifractalNoise, seededCheckerboardFunction, seededCircularWavesFunction, seededPlateauFunction, seededRadialGradientFunction, seededRandomWalkFunction, seededRidgeNoiseFunction, seededSineWaveFunction, seededTurbulenceFunction, thresholdNoise, voronoiNoiseFunction } from './utils/noise/functions/noiseFunctions';
 
 const materialFactory = new MaterialFactory();
 
-const doubleSidedPlaneMaterial = materialFactory.createStandardMaterial({ side: THREE.DoubleSide});
+const doubleSidedPlaneMaterial = materialFactory.createStandardMaterial({ color: "#7CFC00", side: THREE.DoubleSide });
 
 window.addEventListener('DOMContentLoaded', () => {
 
@@ -18,15 +19,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // Create noisy terrain using the imported simplexNoiseGenerator
-    const noisyTerrain = new Terrain({
-        width: 100,
-        height: 100,
+    const noisyTerrain = new TerrainPlane({
+        width: 10,
+        height: 10,
         widthSegments: 256,
         heightSegments: 256,
-        material: doubleSidedPlaneMaterial,  
-        noiseScale: 10,  
-        heightFactor: 10,  
-        receiveShadow: true,  
+        material: doubleSidedPlaneMaterial,
+        noiseScale: 10,
+        heightFactor: 10,
+        receiveShadow: true,
+        noiseFunction: thresholdNoise((seededCircularWavesFunction())),
     })
 
     // Initialize the Three.js engine
@@ -54,11 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .addResizeListener()
         .addPanKeyListener()
         .addRenderSystem()
-        .addEntity(createMeshGameObject(
-            new THREE.Vector3(1, 5, 10),
-            materialFactory.createToonMaterial(),
-            new THREE.BoxGeometry(1, 2, 2)
-        )).addLight(LightFactory.createLight({type:"directional",color:"yellow",position: new THREE.Vector3(10,10,1)}))
+        .addLight(LightFactory.createLight({ type: "directional", color: "white", position: new THREE.Vector3(10, 10, 1) }))
         .addTerrain(noisyTerrain)
         .build();
 

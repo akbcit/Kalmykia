@@ -5,7 +5,7 @@ import { CameraProps, CameraType } from '../types/camera/CameraProps';
 import { createResizeListener } from './eventListeners/resizeListener';
 import { createPanKeyListener } from './eventListeners/panKeyListener';
 import { RenderSystem } from './parentClasses/systems/RenderSystem';
-import { Terrain, TerrainParams } from './derivedClasses/entites/Terrain';
+import { TerrainPlane, TerrainParams } from './derivedClasses/entites/TerrainPlane';
 import { LightObject } from './derivedClasses/entites/LightObject';
 import { createAmbientLight, createDirectionalLight } from '../utils/entityUtils';
 import { Entity } from './parentClasses/Entity';
@@ -89,7 +89,7 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addTerrain(terrain: Terrain): KalmykiaBuilder {
+    addTerrain(terrain: TerrainPlane): KalmykiaBuilder {
         if (this.scene) {
             this.scene.addEntity(terrain);
         }

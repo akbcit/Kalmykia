@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Terrain, TerrainParams } from '../Terrain';
+import { Terrain, TerrainParams } from '../TerrainPlane';
 
 
 
