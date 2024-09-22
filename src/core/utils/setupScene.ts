@@ -1,6 +1,5 @@
 // src/core/utils/setupScene.ts
 import * as THREE from "three";
-import { setupLighting } from "./setupLighting"; // Utility for setting up lighting in the scene
 import { setupEnvironmentMap } from "./setupEnvironmentMap"; // Utility for setting up environment maps for reflections
 import { SceneProps } from "../../types/scene/SceneProps";
 
@@ -43,13 +42,6 @@ export function setupScene(scene: THREE.Scene, props?: SceneProps): THREE.Scene 
     if (props?.axesHelper) {
         const axesHelper = new THREE.AxesHelper(props.axesHelper.size || 5);
         scene.add(axesHelper);
-    }
-
-    // Configure scene lighting using a utility function to add various lights
-    if (props?.lighting) {
-        setupLighting(scene, props.lighting);
-    } else {
-        console.warn("No lighting configuration provided. The scene might appear dark.");
     }
 
     // Set up the environment map for reflections and environmental effects

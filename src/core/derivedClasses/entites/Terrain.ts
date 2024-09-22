@@ -1,10 +1,9 @@
-// src/entities/Terrain.ts
 import * as THREE from 'three';
 import { PlaneGeometry } from './geometries/primitives';
 import { Entity } from '../../parentClasses/Entity';
 import { MeshComponent } from '../components/MeshComponent';
-import { createNoise2D } from 'simplex-noise';
 import { MaterialFactory } from './materials/MaterialFactory';
+import { createNoise2D } from 'simplex-noise'; // Use Simplex noise directly
 
 const materialFactory = new MaterialFactory();
 
@@ -13,48 +12,30 @@ export interface TerrainParams {
   height?: number;
   widthSegments?: number;
   heightSegments?: number;
-  material?: THREE.Material; // Accepts any THREE.Material, including custom materials
-  flatShading?: boolean; // Toggle for flat shading
-  scale?: number; // Scale for Perlin noise
-  detail?: number; // Detail level for Perlin noise
-}
-
-// Type guard to check if the material supports flatShading
-function supportsFlatShading(
-  material: THREE.Material
-): material is
-  | THREE.MeshStandardMaterial
-  | THREE.MeshLambertMaterial
-  | THREE.MeshPhongMaterial {
-  return (
-    material instanceof THREE.MeshStandardMaterial ||
-    material instanceof THREE.MeshLambertMaterial ||
-    material instanceof THREE.MeshPhongMaterial
-  );
+  material?: THREE.Material;
+  noiseScale?: number; // Scale for Simplex noise, like in TerrainSystem
+  heightFactor?: number; // Controls height intensity
+  receiveShadow?: boolean;
 }
 
 export class Terrain extends Entity {
   private mesh: THREE.Mesh;
-  private noise2D?: (x: number, y: number) => number; // Optional noise function
+  private noise2D: (x: number, y: number) => number; // Simplex noise function
 
   constructor({
     width = 100,
     height = 100,
     widthSegments = 50,
     heightSegments = 50,
-    material = materialFactory.createStandardMaterial({color:0x228b22}),
-    flatShading = false,
-    scale = 0, // Default to 0 for flat terrain
-    detail = 1, // Detail level for Perlin noise
+    material = materialFactory.createStandardMaterial({ color: 0x228b22 }),
+    noiseScale = 10, // Similar to TerrainSystem's noise scaling
+    heightFactor = 10, // Controls height intensity (like TerrainSystem's height)
+    receiveShadow = true, // Default to receiving shadows
   }: TerrainParams) {
     super(); // Call the Entity constructor
 
-    if (scale > 0) {
-      const noise = createNoise2D();
-      this.noise2D = (x: number, y: number) => noise(x / scale, y / scale); // Initialize Perlin noise
-    }
+    this.noise2D = createNoise2D(Math.random); // Initialize Simplex noise with a random seed
 
-    // Create a plane geometry with the given dimensions and segments
     const geometry = new PlaneGeometry({
       width,
       height,
@@ -64,40 +45,33 @@ export class Terrain extends Entity {
 
     geometry.rotateX(-Math.PI / 2); // Rotate to make it horizontal, aligned with the XZ plane
 
-    // Modify vertices based on noise if available
+    // Apply the noise to the terrain vertices, similar to TerrainSystem
     const positionAttribute = geometry.attributes.position as THREE.BufferAttribute;
-    const vertices = positionAttribute.array;
-    const widthSegmentsPlus1 = widthSegments + 1;
+    for (let i = 0; i < positionAttribute.count; i++) {
+      const x = positionAttribute.getX(i);
+      const z = positionAttribute.getZ(i);
+      let heightValue = this.noise2D(x / noiseScale, z / noiseScale); // Use noise with scaling
+      heightValue *= heightFactor; // Apply height scaling (like in TerrainSystem)
 
-    if (this.noise2D) {
-      for (let y = 0; y <= heightSegments; y++) {
-        for (let x = 0; x <= widthSegments; x++) {
-          const index = (x + y * widthSegmentsPlus1) * 3;
-          const noiseValue = this.noise2D!(x, y);
-          vertices[index + 1] = noiseValue * detail; // Adjust Y based on noise
-        }
-      }
-      positionAttribute.needsUpdate = true;
+      // Set the Y position (height) of the vertex
+      positionAttribute.setY(i, heightValue);
     }
 
-    // Apply flat shading if the material supports it
-    if (flatShading && supportsFlatShading(material)) {
-      material.flatShading = true;
-      material.needsUpdate = true; // Update the material to reflect changes
-    }
+    // Mark the position attribute as updated to reflect the changes in the mesh
+    positionAttribute.needsUpdate = true;
 
-    // Create the Mesh with geometry and material
+    // Recalculate normals for proper lighting
+    geometry.computeVertexNormals();
+
+    // Create the mesh and apply the material
     this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.receiveShadow = receiveShadow; // Set the mesh to receive shadows
 
-    // Add a MeshComponent to the Terrain entity
+    // Add MeshComponent to the entity
     const meshComponent = new MeshComponent(this.mesh.geometry, this.mesh.material);
-    this.addComponent(meshComponent); // Add MeshComponent to the entity
-
-    // Optional: Log details for debugging
-    (geometry as PlaneGeometry).logDetails();
+    this.addComponent(meshComponent);
   }
 
-  // Method to expose the THREE.Object3D (mesh)
   public getObject3D(): THREE.Object3D {
     return this.mesh;
   }

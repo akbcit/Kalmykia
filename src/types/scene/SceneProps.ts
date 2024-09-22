@@ -45,12 +45,6 @@ export interface SceneProps {
   axesHelper?: AxesHelperProps;
 
   /**
-   * Configures various lighting options in the scene, including ambient, directional, point, and spotlights.
-   * Lighting is crucial for visibility and realism in the 3D environment.
-   */
-  lighting?: LightingProps;
-
-  /**
    * Configures an environment map that adds reflections and environmental effects to objects in the scene.
    * Commonly used to simulate realistic lighting and reflections on surfaces.
    */

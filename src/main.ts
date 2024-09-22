@@ -5,59 +5,35 @@ import { CameraType } from './types/camera/CameraProps';
 import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { createMeshGameObject } from './utils/entityUtils';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
-import { CustomTerrainMaterial } from './assets/CustomTerrainMaterial ';
+import { createSimplexNoiseGenerator } from './utils/noise/simplexNoise';
+import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
+import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
 
+const materialFactory = new MaterialFactory();
 
-// // Function to generate a pastel color
-// function generatePastelColor(hue: number): THREE.Color {
-//     const lightness = 0.8; // High lightness for pastel effect
-//     const saturation = 0.3; // Low saturation for pastel effect
-
-//     const color = new THREE.Color();
-//     color.setHSL(hue, saturation, lightness);
-//     return color;
-//   }
-
-//   // Generate an array of 100 pastel colors
-//   const pastelColors: THREE.Color[] = [];
-//   const numColors = 100;
-
-//   for (let i = 0; i < numColors; i++) {
-//     const hue = i / numColors; // Interpolate hue
-//     pastelColors.push(generatePastelColor(hue));
-//   }
-
-// // Create the custom material with the colors
-// const customMaterial = new CustomTerrainMaterial(pastelColors);
-
-
-const doubleSidedPlaneMaterial = new THREE.MeshStandardMaterial({
-    color: 0x00ff00,
-    roughness: 0.5,
-    metalness: 0.5,
-    side: THREE.DoubleSide
-});
+const doubleSidedPlaneMaterial = materialFactory.createStandardMaterial({ side: THREE.DoubleSide});
 
 window.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('app') as HTMLElement;
 
 
+    // Create noisy terrain using the imported simplexNoiseGenerator
     const noisyTerrain = new Terrain({
-        width: 700,
-        height: 700,
-        widthSegments: 100,
-        heightSegments: 100,
-        flatShading: true,
-        scale: 50,
-        detail: 10,
-        material: doubleSidedPlaneMaterial // Use the custom material
-    });
+        width: 100,
+        height: 100,
+        widthSegments: 256,
+        heightSegments: 256,
+        material: doubleSidedPlaneMaterial, // Use colon (:) instead of equal sign
+        noiseScale: 10, // Similar to TerrainSystem's noise scaling
+        heightFactor: 10, // Controls height intensity (like TerrainSystem's height)
+        receiveShadow: true, // Default to receiving shadows
+    })
 
     // Initialize the Three.js engine
     const engine = new KalmykiaBuilder(container)
         .setCamera({
             cameraType: CameraType.Perspective,
-            position: new THREE.Vector3(4, 4, 14),
+            position: new THREE.Vector3(0, 2, 20),
             fov: 60,
             aspect: window.innerWidth / window.innerHeight,
             near: 0.1,
@@ -79,13 +55,11 @@ window.addEventListener('DOMContentLoaded', () => {
         .addPanKeyListener()
         .addRenderSystem()
         .addEntity(createMeshGameObject(
-            new THREE.Vector3(1, 0, 0),
-            new THREE.MeshToonMaterial({ color: 0xffff00 }),
+            new THREE.Vector3(1, 5, 10),
+            materialFactory.createToonMaterial(),
             new THREE.BoxGeometry(1, 2, 2)
-        ))
+        )).addLight(LightFactory.createLight({type:"directional",color:"yellow",position: new THREE.Vector3(10,10,1)}))
         .addTerrain(noisyTerrain)
-        .addDirectionalLight(new THREE.Vector3(10, 10, 10), 1.5)
-        .addAmbientLight(0.8)
         .build();
 
     // Register update callback and then start the engine
