@@ -5,11 +5,13 @@ import { CameraProps, CameraType } from '../types/camera/CameraProps';
 import { createResizeListener } from './eventListeners/resizeListener';
 import { createPanKeyListener } from './eventListeners/panKeyListener';
 import { RenderSystem } from './parentClasses/systems/RenderSystem';
-import { Terrain, TerrainParams } from './derivedClasses/entites/Terrain';
+import { TerrainPlane, TerrainParams } from './derivedClasses/entites/TerrainPlane';
 import { LightObject } from './derivedClasses/entites/LightObject';
 import { createAmbientLight, createDirectionalLight } from '../utils/entityUtils';
 import { Entity } from './parentClasses/Entity';
 import { GameObject } from './derivedClasses/entites/GameObject';
+import { LightOptions } from './derivedClasses/components/light/LightOptions';
+import { LightFactory } from './derivedClasses/components/light/LightFactory';
 
 export class KalmykiaBuilder {
     private engine: Kalmykia;
@@ -87,28 +89,52 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addTerrain(terrain: Terrain): KalmykiaBuilder {
+    addTerrain(terrain: TerrainPlane): KalmykiaBuilder {
         if (this.scene) {
             this.scene.addEntity(terrain);
         }
         return this;
     }
 
-    addLight(light: LightObject): KalmykiaBuilder {
+    // Modify this method to use LightFactory for creating light objects
+    // Refactor the method to accept a pre-created light and add it to the scene
+    addLight(light: THREE.Light): KalmykiaBuilder {
+        const lightObject = new LightObject(light); // Wrap the light in a LightObject entity
         if (this.scene) {
-            this.scene.addEntity(light);
+            this.scene.addEntity(lightObject); // Add the light to the scene
         }
-        return this;
+        return this; // Return the builder for chaining
     }
 
+    // Refactor to create the light using LightFactory and then add the created light
     addDirectionalLight(position: THREE.Vector3, intensity: number): KalmykiaBuilder {
-        const directionalLight = createDirectionalLight(position, intensity);
-        return this.addLight(directionalLight);
+        const lightOptions: LightOptions = {
+            type: 'directional',
+            color: 0xffffff,
+            intensity: intensity,
+            position: position,
+            castShadow: true,
+        };
+
+        // Use LightFactory to create the light
+        const light = LightFactory.createLight(lightOptions);
+
+        // Add the created light to the scene
+        return this.addLight(light);
     }
 
     addAmbientLight(intensity: number): KalmykiaBuilder {
-        const ambientLight = createAmbientLight(intensity);
-        return this.addLight(ambientLight);
+        const lightOptions: LightOptions = {
+            type: 'ambient',
+            color: 0xffffff,
+            intensity: intensity,
+        };
+
+        // Use LightFactory to create the light
+        const light = LightFactory.createLight(lightOptions);
+
+        // Add the created light to the scene
+        return this.addLight(light);
     }
 
     registerUpdateCallback(callback: (delta: number) => void): KalmykiaBuilder {
