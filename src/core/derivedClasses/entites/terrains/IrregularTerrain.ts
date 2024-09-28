@@ -38,7 +38,26 @@ export class IrregularTerrain extends BaseTerrain {
             curvatureLayers,
             smoothnessFactor,
         });
-        
+
         return geometry;
+    }
+
+    // Method to update the terrain's geometry dynamically
+    public updateGeometry(newParams: Partial<IrregularTerrainParams>): void {
+        // Update the irregular plane geometry params
+        this.irregularPlaneGeometryParams = {
+            ...this.irregularPlaneGeometryParams,
+            ...newParams.irregularPlaneGeometryParams,
+        };
+
+        // Create new geometry with updated parameters
+        const newGeometry = this.createTerrainGeometry();
+
+        // Replace the old geometry with the new one
+        if (this.mesh) {
+            this.mesh.geometry.dispose();
+            this.mesh.geometry = newGeometry;
+            this.mesh.geometry.computeVertexNormals();
+        }
     }
 }

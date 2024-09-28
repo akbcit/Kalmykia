@@ -101,4 +101,22 @@ export class MaterialFactory {
         const mergedOptions = this.applyTextures({ ...this.materialOptions, ...options }, texturePath);
         return new THREE.PointsMaterial(mergedOptions);
     }
+
+    public createWaterMaterial(params: THREE.MeshPhysicalMaterialParameters = {}): THREE.MeshPhysicalMaterial {
+        return new THREE.MeshPhysicalMaterial({
+            color: 0x3399ff, // Light blue water color
+            metalness: 0.6, // Add a metallic sheen to the water
+            roughness: 0.05, // Smooth surface for reflections
+            transmission: 1.0, // Maximum transmission for transparent look
+            reflectivity: 1.0, // Full reflectivity for mirror-like surface
+            clearcoat: 1.0, // Shiny clearcoat layer on top
+            clearcoatRoughness: 0.0, // Smooth clearcoat
+            opacity: 0.5, // Adjust opacity for semi-transparent look
+            ior: 1.33, // Index of Refraction for water
+            envMapIntensity: 1.0, // Strength of environment map reflection
+            side: THREE.DoubleSide, // Render both sides for transparency
+            ...params, // Merge with custom parameters
+        });
+    }
+
 }
