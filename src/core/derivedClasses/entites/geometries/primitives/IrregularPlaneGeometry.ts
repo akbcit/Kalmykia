@@ -46,37 +46,33 @@ export class IrregularPlaneGeometry extends THREE.BufferGeometry {
       // Calculate angle for this segment
       const angle = i * angleIncrement;
 
-      // Calculate initial x and z positions for this vertex on the circle
+      // Calculate initial x and z positions for this vertex on the circle based on the radius
       let x = Math.cos(angle) * radius;
       let z = Math.sin(angle) * radius;
 
       // Apply multiple layers of displacement with randomization to create smoother boundary irregularities
       for (let layer = 1; layer <= curvatureLayers; layer++) {
-        const frequency = layer * smoothnessFactor + Math.random() * 0.5; // Randomize frequency
-        const amplitude = (boundaryDisplacementFactor / (layer * 1.5)) + Math.random() * boundaryDisplacementFactor * 0.1; // Randomize amplitude slightly
+        const frequency = layer * smoothnessFactor; // Control frequency based on smoothness factor
+        const amplitude = boundaryDisplacementFactor / (layer * 2); // Control amplitude based on displacement factor
 
-        // Calculate displacement using sine with random values
+        // Calculate displacement using sine and cosine with frequency and amplitude
         const displacement = Math.sin(angle * frequency) * amplitude;
 
-        // Randomly alter position with displacement and random factors
-        x += displacement * Math.cos(angle) + (Math.random() - 0.5) * boundaryDisplacementFactor * 0.2;
-        z += displacement * Math.sin(angle) + (Math.random() - 0.5) * boundaryDisplacementFactor * 0.2;
+        // Randomly alter position with displacement to create irregularities
+        x += displacement * Math.cos(angle);
+        z += displacement * Math.sin(angle);
       }
 
       // Slight randomization of the vertex position itself
-      x += (Math.random() - 0.5) * boundaryDisplacementFactor * 0.5;
-      z += (Math.random() - 0.5) * boundaryDisplacementFactor * 0.5;
+      x += (Math.random() - 0.5) * boundaryDisplacementFactor * 0.2;
+      z += (Math.random() - 0.5) * boundaryDisplacementFactor * 0.2;
 
-      // Keep the y position constant at 0 for a flat plane
-      const y = 0;
-
-      // Push the vertex position to the vertices array
-      vertices.push(x, y, z);
+      // Push the boundary vertex position to the vertices array
+      vertices.push(x, 0, z); // Keep y position as 0 for a flat plane
     }
 
     // Create indices for triangles between center vertex and boundary vertices
     for (let i = 1; i < segments; i++) {
-      // Indices for triangle from center to boundary
       indices.push(0, i, i + 1);
     }
 
