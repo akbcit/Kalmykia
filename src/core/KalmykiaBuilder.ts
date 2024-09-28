@@ -5,13 +5,13 @@ import { CameraProps, CameraType } from '../types/camera/CameraProps';
 import { createResizeListener } from './eventListeners/resizeListener';
 import { createPanKeyListener } from './eventListeners/panKeyListener';
 import { RenderSystem } from './parentClasses/systems/RenderSystem';
-import { TerrainPlane, TerrainParams } from './derivedClasses/entites/TerrainPlane';
 import { LightObject } from './derivedClasses/entites/LightObject';
-import { createAmbientLight, createDirectionalLight } from '../utils/entityUtils';
 import { Entity } from './parentClasses/Entity';
 import { GameObject } from './derivedClasses/entites/GameObject';
 import { LightOptions } from './derivedClasses/components/light/LightOptions';
 import { LightFactory } from './derivedClasses/components/light/LightFactory';
+import { RectangularTerrain } from './derivedClasses/entites/terrains/RectangularTerrain';
+import { IrregularTerrain } from './derivedClasses/entites/terrains/IrregularTerrain';
 
 export class KalmykiaBuilder {
     private engine: Kalmykia;
@@ -89,15 +89,13 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addTerrain(terrain: TerrainPlane): KalmykiaBuilder {
+    addTerrain(terrain: RectangularTerrain | IrregularTerrain): KalmykiaBuilder {
         if (this.scene) {
             this.scene.addEntity(terrain);
         }
         return this;
     }
 
-    // Modify this method to use LightFactory for creating light objects
-    // Refactor the method to accept a pre-created light and add it to the scene
     addLight(light: THREE.Light): KalmykiaBuilder {
         const lightObject = new LightObject(light); // Wrap the light in a LightObject entity
         if (this.scene) {

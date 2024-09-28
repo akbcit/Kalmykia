@@ -1,19 +1,19 @@
 import * as THREE from 'three';
 
-interface PlaneGeometryParams {
+export interface RectangularPlaneGeometryParams {
   width?: number;
   height?: number;
   widthSegments?: number;
   heightSegments?: number;
 }
 
-export class PlaneGeometry extends THREE.PlaneGeometry {
+export class RectangularPlaneGeometry extends THREE.PlaneGeometry {
   constructor({
     width = 1,
     height = 1,
     widthSegments = 1,
     heightSegments = 1,
-  }: PlaneGeometryParams) {
+  }: RectangularPlaneGeometryParams) {
     super(width, height, widthSegments, heightSegments);
   }
 

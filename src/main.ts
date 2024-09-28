@@ -1,6 +1,5 @@
 // src/index.ts
 import * as THREE from 'three';
-import { TerrainPlane } from './core/derivedClasses/entites/TerrainPlane';
 import { CameraType } from './types/camera/CameraProps';
 import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { createMeshGameObject } from './utils/entityUtils';
@@ -8,10 +7,14 @@ import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
 import { diamondSquareFunction, fractalBrownianMotion, ridgedMultifractalNoise, seededCheckerboardFunction, seededCircularWavesFunction, seededPlateauFunction, seededRadialGradientFunction, seededRandomWalkFunction, seededRidgeNoiseFunction, seededSineWaveFunction, seededTurbulenceFunction, thresholdNoise, voronoiNoiseFunction } from './utils/noise/functions/noiseFunctions';
+import { createRadialNoiseMask } from './utils/masks/maskFunctions';
+import { RectangularTerrain } from './core/derivedClasses/entites/terrains/RectangularTerrain';
+import { IrregularPlaneGeometry } from './core/derivedClasses/entites/geometries/primitives/IrregularPlaneGeometry';
+import { IrregularTerrain } from './core/derivedClasses/entites/terrains/IrregularTerrain';
 
 const materialFactory = new MaterialFactory();
 
-const doubleSidedPlaneMaterial = materialFactory.createStandardMaterial({ color: "#7CFC00", side: THREE.DoubleSide });
+const doubleSidedPlaneMaterial = materialFactory.createStandardMaterial({ color: "#E2CA76", side: THREE.DoubleSide });
 
 window.addEventListener('DOMContentLoaded', () => {
 
@@ -19,17 +22,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // Create noisy terrain using the imported simplexNoiseGenerator
-    const noisyTerrain = new TerrainPlane({
-        width: 10,
-        height: 10,
-        widthSegments: 256,
-        heightSegments: 256,
-        material: doubleSidedPlaneMaterial,
+    const noisyTerrain = new IrregularTerrain({
+        material: doubleSidedPlaneMaterial,  
         noiseScale: 10,
         heightFactor: 10,
         receiveShadow: true,
-        noiseFunction: thresholdNoise((seededCircularWavesFunction())),
-    })
+    });
 
     // Initialize the Three.js engine
     const engine = new KalmykiaBuilder(container)
@@ -62,9 +60,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Register update callback and then start the engine
     engine.sceneManager.getCurrentScene()?.registerUpdateCallback((delta: number) => {
-        // Update the custom material with the elapsed time
-        // customMaterial.update();
-
         // Example callback to rotate an object
         const meshComponent = engine.sceneManager.getCurrentScene()?.getEntities()[0].getComponent(MeshComponent);
         if (meshComponent) {
@@ -73,5 +68,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    engine.start(); // Start the engine
+    // Start the engine
+    engine.start();
 });

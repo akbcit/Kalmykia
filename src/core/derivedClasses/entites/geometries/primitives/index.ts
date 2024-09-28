@@ -1,4 +1,4 @@
 export { CubeGeometry } from "./CubeGeometry";
-export { PlaneGeometry } from "./PlaneGeometry";
+export { RectangularPlaneGeometry } from "./RectangularPlaneGeometry";
 export { PointGeometry } from "./PointGeometry";
 export { SphereGeometry } from "./SphereGeometry";
