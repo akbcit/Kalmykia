@@ -7,6 +7,7 @@ import { LightFactory } from './core/derivedClasses/components/light/LightFactor
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/water/Water';
+import { IrregularPlaneGeometry } from './core/derivedClasses/entites/geometries/primitives/IrregularPlaneGeometry';
 
 const materialFactory = new MaterialFactory();
 
@@ -15,7 +16,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Create a new WaterEntity
   const waterParams: WaterEntityParams = {
-    geometry: new THREE.PlaneGeometry(100, 100),
+    geometry: new IrregularPlaneGeometry({}),
     texturePath: 'src/assets/normals/waternormals.jpg',
     sunDirection: new THREE.Vector3(0.2, 1.0, 0.1), // Sunlight direction
     sunColor: 0xffffff, // Sunlight color
