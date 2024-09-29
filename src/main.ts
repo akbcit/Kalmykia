@@ -6,11 +6,28 @@ import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { Water } from 'three/examples/jsm/objects/Water.js';
+import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/water/Water';
 
 const materialFactory = new MaterialFactory();
 
 window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('app') as HTMLElement;
+
+  // Create a new WaterEntity
+  const waterParams: WaterEntityParams = {
+    geometry: new THREE.PlaneGeometry(100, 100),
+    texturePath: 'src/assets/normals/waternormals.jpg',
+    sunDirection: new THREE.Vector3(0.2, 1.0, 0.1), // Sunlight direction
+    sunColor: 0xffffff, // Sunlight color
+    waterColor: 0x001e0f, // Water surface color
+    distortionScale: 3.7, // Scale of water surface distortion
+    size: 1, // Size of the water waves
+    alpha: 0.75, // Transparency
+    castShadow: true, // Enable casting shadows
+    receiveShadow: true, // Enable receiving shadows
+  };
+
+  const waterEntity = new WaterEntity(waterParams);
 
   const engine = new KalmykiaBuilder(container)
     .setCamera({
@@ -37,7 +54,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .addPanKeyListener()
     .addRenderSystem()
     .addLight(LightFactory.createLight({ type: 'directional', color: 0xffffff, position: new THREE.Vector3(100, 100, 10) }))
-    .addAmbientLight(0.5)
+    .addAmbientLight(0.5).addEntity(waterEntity)
     .build();
 
   // Load water normal texture
@@ -45,28 +62,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const waterNormals = textureLoader.load('src/assets/normals/waternormals.jpg');
   waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
 
-  // Create water
-  const waterGeometry = new THREE.PlaneGeometry(100, 100);
-  const water = new Water(
-    waterGeometry,
-    {
-      textureWidth: 512,
-      textureHeight: 512,
-      waterNormals: waterNormals,
-      sunDirection: new THREE.Vector3(0.2, 1.0, 0.1),
-      sunColor: 0xffffff,
-      waterColor: 0x001e0f,
-      distortionScale: 3.7,
-      fog: engine.sceneManager.getCurrentScene()?.getScene().fog !== undefined
-    }
-  );
-
-  water.rotation.x = -Math.PI / 2;
-  engine.sceneManager.getCurrentScene()?.getScene().add(water);
-
+  // Add dat.GUI for controlling water properties
   // Add dat.GUI for controlling water properties
   const gui = new GUI();
-  const waterUniforms = water.material.uniforms;
+  const waterUniforms = waterEntity.getWater().material.uniforms;
   const waterFolder = gui.addFolder('Water');
   waterFolder.addColor(waterUniforms.waterColor, 'value').name('Water Color');
   waterFolder.add(waterUniforms.distortionScale, 'value', 0, 8, 0.1).name('Distortion Scale');
@@ -75,7 +74,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Register update callback for animations
   engine.sceneManager.getCurrentScene()?.registerUpdateCallback((delta: number) => {
-    water.material.uniforms['time'].value += delta;
+    waterEntity.updateWaterAnimation(delta);
   });
 
   engine.start();
