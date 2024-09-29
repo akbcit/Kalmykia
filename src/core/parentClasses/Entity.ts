@@ -36,17 +36,17 @@ export class Entity {
 
     // Retrieves a component by type, cast to the correct class
     // Accepts a constructor function to match the component type
-    public getComponent<T extends Component>(type: { new (...args: any[]): T }): T | undefined {
+    public getComponent<T extends Component>(type: { new(...args: any[]): T }): T | undefined {
         return this.components.get(type.name) as T; // Cast the retrieved component to the specified type
     }
 
     // Checks if the entity has a component of a specific type
-    public hasComponent<T extends Component>(type: { new (...args: any[]): T }): boolean {
+    public hasComponent<T extends Component>(type: { new(...args: any[]): T }): boolean {
         return this.components.has(type.name); // Check existence of component by class name
     }
 
     // Removes a component and triggers the component's cleanup
-    public removeComponent<T extends Component>(type: { new (...args: any[]): T }): void {
+    public removeComponent<T extends Component>(type: { new(...args: any[]): T }): void {
         const componentName = type.name;
         const component = this.components.get(componentName); // Retrieve the component
         if (component) {
@@ -70,6 +70,21 @@ export class Entity {
         // Dispose of each component to release resources
         this.components.forEach((component) => component.dispose());
         this.components.clear(); // Clear the component map
+    }
+
+    // New method to set the position of the entity's Object3D, if it has a MeshComponent
+    public setPosition(x: number, y: number, z: number): void {
+        const object3D = this.getObject3D();
+        if (object3D) {
+            object3D.position.set(x, y, z);
+        } else {
+            console.warn(`Entity ${this.id} does not have an associated Object3D to set position.`);
+        }
+    }
+
+    //Method to set position using a THREE.Vector3 for convenience
+    public setPositionVector(position: THREE.Vector3): void {
+        this.setPosition(position.x, position.y, position.z);
     }
 
     // Method to get the THREE.Object3D associated with this entity, if any

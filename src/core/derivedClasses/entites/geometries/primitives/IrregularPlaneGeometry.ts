@@ -18,11 +18,14 @@ export class IrregularPlaneGeometry extends THREE.BufferGeometry {
   }: IrregularPlaneGeometryParams) {
     super();
 
-    // Create a circular base plane with randomized, smooth edges
+    // Create a circular base plane with randomized, smooth edges on the X-Z plane
     this.createRandomizedCircularPlane(radius, segments, boundaryDisplacementFactor, curvatureLayers, smoothnessFactor);
 
     // Compute normals once after setting vertices and indices
     this.computeVertexNormals();
+
+    // Rotate the geometry to lie on the X-Z plane
+    this.rotateX(-Math.PI / 2); // Rotate by 90 degrees around the X-axis
   }
 
   private createRandomizedCircularPlane(
@@ -38,17 +41,17 @@ export class IrregularPlaneGeometry extends THREE.BufferGeometry {
     // Calculate angle increment for each segment
     const angleIncrement = (Math.PI * 2) / segments;
 
-    // Create center vertex
+    // Create center vertex for X-Z plane
     vertices.push(0, 0, 0); // Center point (x = 0, y = 0, z = 0)
 
-    // Create boundary vertices with randomization
+    // Create boundary vertices with randomization on the X-Z plane
     for (let i = 0; i < segments; i++) {
       // Calculate angle for this segment
       const angle = i * angleIncrement;
 
       // Calculate initial x and z positions for this vertex on the circle based on the radius
       let x = Math.cos(angle) * radius;
-      let z = Math.sin(angle) * radius;
+      let z = Math.sin(angle) * radius; // Use `z` for boundary position, y will be 0
 
       // Apply multiple layers of displacement with randomization to create smoother boundary irregularities
       for (let layer = 1; layer <= curvatureLayers; layer++) {
@@ -67,8 +70,8 @@ export class IrregularPlaneGeometry extends THREE.BufferGeometry {
       x += (Math.random() - 0.5) * boundaryDisplacementFactor * 0.2;
       z += (Math.random() - 0.5) * boundaryDisplacementFactor * 0.2;
 
-      // Push the boundary vertex position to the vertices array
-      vertices.push(x, 0, z); // Keep y position as 0 for a flat plane
+      // Push the boundary vertex position to the vertices array for X-Z plane
+      vertices.push(x, 0, z); // Ensure y position is 0 for a flat plane on X-Z
     }
 
     // Create indices for triangles between center vertex and boundary vertices
