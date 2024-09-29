@@ -6,6 +6,7 @@ import {
     MeshDistanceMaterialOptions, SpriteMaterialOptions, PointsMaterialOptions,
     ShaderMaterialOptions, RawShaderMaterialOptions
 } from "./types/MaterialOptions";
+import { Water } from 'three/examples/jsm/objects/Water';
 
 export class MaterialFactory {
     private materialOptions: BaseMaterialOptions;
@@ -17,7 +18,7 @@ export class MaterialFactory {
     }
 
     // Helper function to load texture if texture path is provided
-    private loadTexture(path?: string): THREE.Texture | null {
+    public loadTexture(path?: string): THREE.Texture | null {
         return path ? this.textureLoader.load(path) : null;
     }
 
@@ -102,20 +103,90 @@ export class MaterialFactory {
         return new THREE.PointsMaterial(mergedOptions);
     }
 
-    public createWaterMaterial(params: THREE.MeshPhysicalMaterialParameters = {}): THREE.MeshPhysicalMaterial {
-        return new THREE.MeshPhysicalMaterial({
-            color: 0x3399ff, // Light blue water color
-            metalness: 0.6, // Add a metallic sheen to the water
-            roughness: 0.05, // Smooth surface for reflections
-            transmission: 1.0, // Maximum transmission for transparent look
-            reflectivity: 1.0, // Full reflectivity for mirror-like surface
-            clearcoat: 1.0, // Shiny clearcoat layer on top
-            clearcoatRoughness: 0.0, // Smooth clearcoat
-            opacity: 0.5, // Adjust opacity for semi-transparent look
-            ior: 1.33, // Index of Refraction for water
-            envMapIntensity: 1.0, // Strength of environment map reflection
-            side: THREE.DoubleSide, // Render both sides for transparency
-            ...params, // Merge with custom parameters
+
+    public createWaterMaterial(options: {
+        textureWidth?: number;
+        textureHeight?: number;
+        waterNormalsPath?: string;
+        sunDirection?: THREE.Vector3;
+        sunColor?: number | string;
+        waterColor?: number | string;   
+        distortionScale?: number;
+        doubleSide?: boolean; // New parameter to control rendering on both sides
+    } = {}): THREE.ShaderMaterial {
+        // Set default parameters for the material
+        const defaults = {
+            textureWidth: 512,
+            textureHeight: 512,
+            waterNormalsPath: 'src/assets/normals/seaWaves.jpg',
+            sunDirection: new THREE.Vector3(0, 1, 0),
+            sunColor: 0xffffff,
+            waterColor: 0x3399ff, // Light blue color for water
+            distortionScale: 3.7,
+            doubleSide: true, // Default to rendering on both sides
+        };
+    
+        // Merge user options with default values
+        const params = { ...defaults, ...options };
+    
+        // Load waterNormals texture if a path is provided
+        let waterNormals: THREE.Texture | undefined = undefined;
+        if (params.waterNormalsPath) {
+            waterNormals = this.textureLoader.load(
+                params.waterNormalsPath,
+                () => console.log('Water normals texture loaded successfully.'),
+                undefined,
+                (error) => {
+                    console.error(`Failed to load water normals texture: ${error}`);
+                }
+            );
+            if (waterNormals) {
+                waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+            }
+        }
+    
+        // Create the water material using THREE.Water
+        let water: Water;
+        try {
+            water = new Water(new THREE.PlaneGeometry(1000, 1000), {
+                textureWidth: params.textureWidth,
+                textureHeight: params.textureHeight,
+                waterNormals: waterNormals,
+                sunDirection: params.sunDirection,
+                sunColor: params.sunColor,
+                waterColor: params.waterColor, // Use the blue water color here
+                distortionScale: params.distortionScale,
+                fog: false,
+            });
+    
+            // Ensure the water has a visible blue color
+            (water.material as any).uniforms['waterColor'].value.set(0x3399ff);
+    
+            // Set the side property based on the `doubleSide` parameter
+            water.material.side = params.doubleSide ? THREE.DoubleSide : THREE.FrontSide;
+    
+            console.log('Water material created successfully with the following properties:', water.material);
+        } catch (error) {
+            console.error('Error creating water material:', error);
+            throw new Error(`Water material creation failed: ${error}`);
+        }
+    
+        return water.material as THREE.ShaderMaterial;
+    }
+
+    public createDebugMaterial(): THREE.MeshBasicMaterial {
+        // Simple red-colored material to check visibility
+        return new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+    }
+
+    public createBasicWaterMaterial(): THREE.MeshStandardMaterial {
+        return new THREE.MeshStandardMaterial({
+            color: 0x3399ff, // Light blue color
+            metalness: 0.1,
+            roughness: 0.1,
+            opacity: 0.7, // Adjust opacity
+            transparent: true, // Allow transparency for water-like effect
+            side: THREE.DoubleSide, // Render both sides of the geometry
         });
     }
 
