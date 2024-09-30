@@ -1,74 +1,41 @@
+// terrains/RectangularTerrain.ts
 import * as THREE from 'three';
-import { MaterialFactory } from '../materials/MaterialFactory';
-import { NoiseFunction } from '../../../../utils/noise/types/NoiseFunction';
-import { createNoise2D } from 'simplex-noise';
-import { Entity } from '../../../parentClasses/Entity';
-import { MeshComponent } from '../../components/MeshComponent';
 import { RectangularPlaneGeometry } from '../geometries/primitives';
 import { RectangularPlaneGeometryParams } from '../geometries/primitives/RectangularPlaneGeometry';
+import { BaseTerrain, BaseTerrainParams } from './BaseTerrain';
 
-const materialFactory = new MaterialFactory();
-
-export interface RectangularTerrainParams {
+export interface RectangularTerrainParams extends BaseTerrainParams {
   rectangularPlaneParams?: RectangularPlaneGeometryParams;
-  material?: THREE.Material;
-  noiseScale?: number;
-  heightFactor?: number;
-  receiveShadow?: boolean;
-  noiseFunction?: NoiseFunction;
 }
 
-export class RectangularTerrain extends Entity {
+export class RectangularTerrain extends BaseTerrain {
+  protected mesh: THREE.Mesh;
+  public rectangularPlaneParams: RectangularPlaneGeometryParams;
 
-  private mesh: THREE.Mesh;
-  private noise2D: (x: number, y: number) => number;
+  constructor(params: RectangularTerrainParams = {}) {
+    const { rectangularPlaneParams = {}, ...baseParams } = params;
 
-  constructor({
-    rectangularPlaneParams,
-    material = materialFactory.createStandardMaterial({ color: 0x228b22 }),
-    noiseScale = 10,
-    heightFactor = 10,
-    receiveShadow = true,
-    noiseFunction = createNoise2D(Math.random), // Use the passed noise function or default to Simplex noise
-  }: RectangularTerrainParams) {
+    // Pass the base params to the parent class constructor
+    super(baseParams);
 
-    // Call the Entity constructor
-    super();
+    // Assign the rectangular plane geometry params with default values
+    this.rectangularPlaneParams = {
+      width: 100,
+      height: 100,
+      widthSegments: 50,
+      heightSegments: 50,
+      ...rectangularPlaneParams, // Override default values if passed
+    };
 
-    // Assign the passed noise function
-    this.noise2D = noiseFunction;
-
-    const {
-      width = 100,
-      height = 100,
-      widthSegments = 50,
-      heightSegments = 50
-    } = rectangularPlaneParams ?? {};
-
-    // Create terrain geometry
-    const geometry = this.createTerrainGeometry(width, height, widthSegments, heightSegments);
-
-    // Apply noise to terrain
-    this.applyNoiseToTerrain(geometry, noiseScale, heightFactor);
-
-    // Compute normals
-    geometry.computeVertexNormals();
-
-    // Create mesh
-    this.mesh = this.createMesh(geometry, material, receiveShadow);
-
-    // Add mesh component
-    this.addMeshComponent(this.mesh);
+    // Initialize and create the mesh after params are set
+    this.mesh = this.createMesh();
   }
 
-  // Extract noise initialization into its own method
-  private initializeNoise(): (x: number, y: number) => number {
-    return createNoise2D(Math.random);
-  }
+  // Override and implement the abstract method to create terrain geometry
+  protected createTerrainGeometry(): THREE.BufferGeometry {
+    const { width, height, widthSegments, heightSegments } = this.rectangularPlaneParams;
 
-  // Create terrain geometry using RectangularPlaneGeometry
-  private createTerrainGeometry(width: number, height: number, widthSegments: number, heightSegments: number): RectangularPlaneGeometry {
-
+    // Create a rectangular plane geometry
     const geometry = new RectangularPlaneGeometry({
       width,
       height,
@@ -76,45 +43,27 @@ export class RectangularTerrain extends Entity {
       heightSegments,
     });
 
-    // Rotate to make it horizontal
+    // Rotate the plane to be horizontal
     geometry.rotateX(-Math.PI / 2);
 
     return geometry;
   }
 
-  // Apply noise to terrain vertices
-  private applyNoiseToTerrain(geometry: RectangularPlaneGeometry, noiseScale: number, heightFactor: number): void {
-    // Get positionAttribute of geometry
-    const positionAttribute = geometry.attributes.position as THREE.BufferAttribute;
+  // Create a mesh from the geometry and material
+  protected createMesh(): THREE.Mesh {
+    // Create geometry
+    const geometry = this.createTerrainGeometry();
 
-    // For each vertex in the position attribute
-    for (let i = 0; i < positionAttribute.count; i++) {
-      const x = positionAttribute.getX(i); // Get x position
-      const z = positionAttribute.getZ(i); // Get z position
-
-      // Calculate height value using noise function
-      let heightValue = this.noise2D(x / noiseScale, z / noiseScale);
-      heightValue *= heightFactor; // Scale height value
-
-      // Set y position (height)
-      positionAttribute.setY(i, heightValue);
+    // Apply noise if required
+    if (this.useNoise) {
+      this.applyNoiseToTerrain(geometry); // Default values can be adjusted or passed as parameters
     }
 
-    // Mark the position attribute as needing update
-    positionAttribute.needsUpdate = true;
-  }
+    // Create mesh from geometry and material
+    const mesh = new THREE.Mesh(geometry, this.material);
+    mesh.receiveShadow = this.receiveShadow;
 
-  // Create mesh from geometry and material
-  private createMesh(geometry: THREE.BufferGeometry, material: THREE.Material, receiveShadow: boolean): THREE.Mesh {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.receiveShadow = receiveShadow;
     return mesh;
-  }
-
-  // Add the mesh component to Terrain Entity
-  private addMeshComponent(mesh: THREE.Mesh): void {
-    const meshComponent = new MeshComponent(mesh.geometry, mesh.material);
-    this.addComponent(meshComponent);
   }
 
   // Return the mesh as a 3D object

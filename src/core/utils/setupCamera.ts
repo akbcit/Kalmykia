@@ -13,7 +13,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 export function setupCamera(props: CameraProps, domElement?: HTMLElement): { camera: THREE.PerspectiveCamera | THREE.OrthographicCamera, controls?: OrbitControls } {
     let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
 
-    // Initialize the appropriate camera type
     if (props.cameraType === CameraType.Perspective) {
         const perspectiveProps = props as PerspectiveCameraProps;
         camera = new THREE.PerspectiveCamera(
@@ -38,17 +37,15 @@ export function setupCamera(props: CameraProps, domElement?: HTMLElement): { cam
         throw new Error("Unsupported camera type");
     }
 
-    // Set the camera's position and look at the specified target
+    // Set the camera's initial position and orientation
     camera.position.copy(props.position || new THREE.Vector3(0, 0, 5));
     camera.lookAt(props.lookAt || new THREE.Vector3(0, 0, 0));
 
     let controls: OrbitControls | undefined;
 
-    // Initialize controls if props.controls is defined and domElement is provided
     if (props.controls && domElement) {
         controls = new OrbitControls(camera, domElement);
 
-        // Apply controls settings only if props.controls is defined
         const controlSettings = props.controls;
         controls.target.copy(controlSettings.target || props.lookAt || new THREE.Vector3(0, 0, 0));
         controls.autoRotate = controlSettings.autoRotate || false;
@@ -69,32 +66,18 @@ export function setupCamera(props: CameraProps, domElement?: HTMLElement): { cam
         controls.dampingFactor = controlSettings.dampingFactor ?? 0.05;
         controls.rotateSpeed = controlSettings.rotateSpeed ?? 1.0;
 
-        // Apply panning restrictions to XZ plane if specified
-        if (controlSettings.restrictPanToXZPlane) {
-            controls.addEventListener('change', () => {
-                controls?.target.set(controls.target.x, 0, controls.target.z);
-                camera.position.y = Math.max(camera.position.y, 0.1);
-            });
+        function enforceConstraints() {
+            // Ensure camera doesn't look below the terrain
+            if (controls!.target.y < 0) controls!.target.y = 0;
+            
+            // Ensure the camera's vertical position is within bounds
+            if (camera.position.y < (controlSettings.minCameraY ?? 0.1)) {
+                camera.position.y = controlSettings.minCameraY ?? 0.1;
+            }
         }
 
-        // Apply min and max pan limits if specified
-        if (controlSettings.maxPan || controlSettings.minPan) {
-            controls.addEventListener('change', () => {
-                if (controls) {
-                    const target = controls.target;
-                    if (controlSettings.maxPan) {
-                        target.x = Math.min(target.x, controlSettings.maxPan.x);
-                        target.y = Math.min(target.y, controlSettings.maxPan.y);
-                        target.z = Math.min(target.z, controlSettings.maxPan.z);
-                    }
-                    if (controlSettings.minPan) {
-                        target.x = Math.max(target.x, controlSettings.minPan.x);
-                        target.y = Math.max(target.y, controlSettings.minPan.y);
-                        target.z = Math.max(target.z, controlSettings.minPan.z);
-                    }
-                }
-            });
-        }
+        // Attach constraint enforcement to change event
+        controls.addEventListener('change', enforceConstraints);
 
         controls.update();
     }
