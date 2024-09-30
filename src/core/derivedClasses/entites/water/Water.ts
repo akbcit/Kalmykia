@@ -51,6 +51,8 @@ export type WaterEntityParams = {
   castShadow?: boolean;                     // Determines if the water surface should cast a shadow.
   receiveShadow?: boolean;                  // Determines if the water surface should receive shadows.
 
+  hasDoubleSide?: boolean;
+
   // Optional Callbacks for Water Entity
   onBeforeRender?: (renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => void; // Custom render logic.
   onAfterRender?: (renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => void;  // Custom post-render logic.
@@ -89,6 +91,21 @@ export class WaterEntity extends Entity {
       fog: params.fog || false,
     });
 
+    // Set double-sided rendering 
+    if (params.hasDoubleSide) {
+      this.water.material.side = THREE.DoubleSide;
+    }
+
+    const waterMaterial = this.water.material;
+    // waterMaterial.polygonOffset = true;
+    // waterMaterial.polygonOffsetFactor  = 10;
+    // waterMaterial.polygonOffsetUnits  = 10;
+    waterMaterial.depthWrite = false; // Prevent water from affecting depth buffer
+    waterMaterial.depthTest = true; // Enable depth testing
+    waterMaterial.depthFunc = THREE.LessEqualDepth;
+    waterMaterial.transparent = true;
+    waterMaterial.blending = THREE.NormalBlending;
+    
     // Set additional water properties based on params
     if (params.opacity !== undefined) this.water.material.opacity = params.opacity;
     if (params.side !== undefined) this.water.material.side = params.side;
@@ -97,6 +114,9 @@ export class WaterEntity extends Entity {
     // Add the water mesh to the entity as a MeshComponent
     const waterMeshComponent = new MeshComponent(this.water.geometry, this.water.material);
     this.addComponent(waterMeshComponent);
+
+    // Set render order for the WaterEntity's mesh
+    this.setRenderOrder(10); // Render after terrain
 
     // Rotate and position the water object
     this.water.rotation.x = -Math.PI / 2; // Rotate to lie flat

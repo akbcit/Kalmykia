@@ -110,7 +110,7 @@ export class MaterialFactory {
         waterNormalsPath?: string;
         sunDirection?: THREE.Vector3;
         sunColor?: number | string;
-        waterColor?: number | string;   
+        waterColor?: number | string;
         distortionScale?: number;
         doubleSide?: boolean; // New parameter to control rendering on both sides
     } = {}): THREE.ShaderMaterial {
@@ -125,10 +125,10 @@ export class MaterialFactory {
             distortionScale: 3.7,
             doubleSide: true, // Default to rendering on both sides
         };
-    
+
         // Merge user options with default values
         const params = { ...defaults, ...options };
-    
+
         // Load waterNormals texture if a path is provided
         let waterNormals: THREE.Texture | undefined = undefined;
         if (params.waterNormalsPath) {
@@ -144,7 +144,7 @@ export class MaterialFactory {
                 waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
             }
         }
-    
+
         // Create the water material using THREE.Water
         let water: Water;
         try {
@@ -158,19 +158,19 @@ export class MaterialFactory {
                 distortionScale: params.distortionScale,
                 fog: false,
             });
-    
+
             // Ensure the water has a visible blue color
             (water.material as any).uniforms['waterColor'].value.set(0x3399ff);
-    
+
             // Set the side property based on the `doubleSide` parameter
             water.material.side = params.doubleSide ? THREE.DoubleSide : THREE.FrontSide;
-    
+
             console.log('Water material created successfully with the following properties:', water.material);
         } catch (error) {
             console.error('Error creating water material:', error);
             throw new Error(`Water material creation failed: ${error}`);
         }
-    
+
         return water.material as THREE.ShaderMaterial;
     }
 
@@ -187,6 +187,98 @@ export class MaterialFactory {
             opacity: 0.7, // Adjust opacity
             transparent: true, // Allow transparency for water-like effect
             side: THREE.DoubleSide, // Render both sides of the geometry
+        });
+    }
+
+    public createGrassyTerrainMaterial(): THREE.MeshStandardMaterial {
+        // Load each texture map with their respective paths
+        const colorTexture = this.loadTexture('src/assets/textures/grass/Grass001_1K-JPG_Color.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/grass/Grass001_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/grass/Grass001_1K-JPG_Displacement.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/grass/Grass001_1K-JPG_NormalGL.jpg'); // Use NormalGL for Three.js
+        const roughnessTexture = this.loadTexture('src/assets/textures/grass/Grass001_1K-JPG_Roughness.jpg');
+
+        // Ensure textures are set to repeat and wrap correctly for large terrains
+        [colorTexture, ambientOcclusionTexture, displacementTexture, normalTexture, roughnessTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(10, 10); // Repeat the texture for large terrains
+            }
+        });
+
+        // Create and return the material with all texture maps applied
+        return new THREE.MeshStandardMaterial({
+            map: colorTexture,                          // Base color map
+            aoMap: ambientOcclusionTexture,             // Ambient Occlusion map
+            displacementMap: displacementTexture,       // Displacement map for surface detail
+            displacementScale: 0.2,                     // Scale of displacement, adjust as needed
+            normalMap: normalTexture,                   // Normal map for surface details
+            roughnessMap: roughnessTexture,             // Roughness map for material roughness
+            roughness: 1,                             // Base roughness value
+            metalness: 0,                             // Low metalness for non-metallic surface
+            side: THREE.DoubleSide,                     // Render on both sides
+        });
+    }
+    // Create a muddy terrain material
+    public createMuddyTerrainMaterial(): THREE.MeshStandardMaterial {
+        const mudTexturePath = 'src/assets/textures/___.jpg'; // Path to mud texture
+        const texture = this.loadTexture(mudTexturePath);
+
+        // Set texture wrapping and repetition
+        if (texture) {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(10, 10); // Repeat the texture for large terrains
+        }
+
+        return new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.9,
+            metalness: 0.1,
+            side: THREE.DoubleSide,
+        });
+    }
+
+
+    public createMossyTerrainMaterial(): THREE.MeshStandardMaterial {
+        // Load each texture map with their respective paths
+        const colorTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Color.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Displacement.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_NormalGL.jpg'); // Use NormalGL for Three.js
+        const roughnessTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Roughness.jpg');
+
+        // Ensure textures are set to repeat and wrap correctly for large terrains
+        [colorTexture, ambientOcclusionTexture, displacementTexture, normalTexture, roughnessTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(10, 10); // Repeat the texture for large terrains
+            }
+        });
+
+        // Create and return the material with all texture maps applied
+        return new THREE.MeshStandardMaterial({
+            map: colorTexture,                          // Base color map
+            aoMap: ambientOcclusionTexture,             // Ambient Occlusion map
+            displacementMap: displacementTexture,       // Displacement map for surface detail
+            displacementScale: 0.1,                     // Scale of displacement, adjust as needed
+            normalMap: normalTexture,                   // Normal map for surface details
+            roughnessMap: roughnessTexture,             // Roughness map for material roughness
+            roughness: 1,                               // Base roughness value (no shininess)
+            metalness: 0,                               // No metalness for a natural, non-metallic surface
+            side: THREE.DoubleSide,                     // Render on both sides
+        });
+    }
+
+    public createNonShinyMossMaterial(): THREE.MeshLambertMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Color.jpg');
+        if (colorTexture) {
+            colorTexture.wrapS = colorTexture.wrapT = THREE.RepeatWrapping;
+            colorTexture.repeat.set(10, 10); // Repeat the texture for large terrains
+        }
+    
+        return new THREE.MeshLambertMaterial({
+            map: colorTexture,      // Base color map
+            side: THREE.DoubleSide, // Render on both sides
         });
     }
 

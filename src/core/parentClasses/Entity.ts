@@ -3,76 +3,61 @@ import { MeshComponent } from "../derivedClasses/components/MeshComponent";
 import { Component } from "./Component";
 import * as THREE from "three";
 
-// Global counter to generate unique IDs for each entity
 let nextEntityId = 0;
 
 export class Entity {
-    // Unique identifier for the entity
     private id: number;
-
-    // Map to store components by their class names as keys
     private components: Map<string, Component>;
 
-    // Constructor initializes the entity with a unique ID and an empty component map
     constructor() {
         this.id = nextEntityId++;
         this.components = new Map<string, Component>();
     }
 
-    // Returns the unique identifier of the entity
     public getId(): number {
         return this.id;
     }
 
-    // Adds a component to the entity, with chaining for flexibility
     public addComponent(component: Component): this {
-        const componentName = component.constructor.name; // Get the class name of the component
+        const componentName = component.constructor.name;
         if (this.components.has(componentName)) {
             console.warn(`Entity ${this.id} already has a component of type ${componentName}.`);
         }
-        this.components.set(componentName, component); // Add the component to the map
-        return this; // Return the entity itself to allow method chaining
+        this.components.set(componentName, component);
+        return this;
     }
 
-    // Retrieves a component by type, cast to the correct class
-    // Accepts a constructor function to match the component type
-    public getComponent<T extends Component>(type: { new(...args: any[]): T }): T | undefined {
-        return this.components.get(type.name) as T; // Cast the retrieved component to the specified type
+    public getComponent<T extends Component>(type: { new (...args: any[]): T }): T | undefined {
+        return this.components.get(type.name) as T;
     }
 
-    // Checks if the entity has a component of a specific type
-    public hasComponent<T extends Component>(type: { new(...args: any[]): T }): boolean {
-        return this.components.has(type.name); // Check existence of component by class name
+    public hasComponent<T extends Component>(type: { new (...args: any[]): T }): boolean {
+        return this.components.has(type.name);
     }
 
-    // Removes a component and triggers the component's cleanup
-    public removeComponent<T extends Component>(type: { new(...args: any[]): T }): void {
+    public removeComponent<T extends Component>(type: { new (...args: any[]): T }): void {
         const componentName = type.name;
-        const component = this.components.get(componentName); // Retrieve the component
+        const component = this.components.get(componentName);
         if (component) {
-            component.dispose(); // Call dispose method to clean up resources
-            this.components.delete(componentName); // Remove component from the map
+            component.dispose();
+            this.components.delete(componentName);
         } else {
             console.warn(`Entity ${this.id} does not have a component of type ${componentName} to remove.`);
         }
     }
 
-    // Calls the update method on all components
     public update(delta: number): void {
-        // Iterate over each component and call its update method
         this.components.forEach((component) => {
             component.update(delta);
         });
     }
 
-    // Clears all components, useful for cleanup or entity destruction
     public clearComponents(): void {
-        // Dispose of each component to release resources
         this.components.forEach((component) => component.dispose());
-        this.components.clear(); // Clear the component map
+        this.components.clear();
     }
 
-    // New method to set the position of the entity's Object3D, if it has a MeshComponent
+    // Position-related methods
     public setPosition(x: number, y: number, z: number): void {
         const object3D = this.getObject3D();
         if (object3D) {
@@ -82,15 +67,73 @@ export class Entity {
         }
     }
 
-    //Method to set position using a THREE.Vector3 for convenience
     public setPositionVector(position: THREE.Vector3): void {
         this.setPosition(position.x, position.y, position.z);
     }
 
+    public getPosition(): THREE.Vector3 | null {
+        const object3D = this.getObject3D();
+        return object3D ? object3D.position.clone() : null;
+    }
+
+    // Rotation-related methods
+    public setRotation(x: number, y: number, z: number): void {
+        const object3D = this.getObject3D();
+        if (object3D) {
+            object3D.rotation.set(x, y, z);
+        } else {
+            console.warn(`Entity ${this.id} does not have an associated Object3D to set rotation.`);
+        }
+    }
+
+    public getRotation(): THREE.Euler | null {
+        const object3D = this.getObject3D();
+        return object3D ? object3D.rotation.clone() : null;
+    }
+
+    // Scale-related methods
+    public setScale(x: number, y: number, z: number): void {
+        const object3D = this.getObject3D();
+        if (object3D) {
+            object3D.scale.set(x, y, z);
+        } else {
+            console.warn(`Entity ${this.id} does not have an associated Object3D to set scale.`);
+        }
+    }
+
+    public getScale(): THREE.Vector3 | null {
+        const object3D = this.getObject3D();
+        return object3D ? object3D.scale.clone() : null;
+    }
+
+    // Method to set the render order of the entity's Object3D
+    public setRenderOrder(order: number): void {
+        const object3D = this.getObject3D();
+        if (object3D) {
+            object3D.renderOrder = order;
+        } else {
+            console.warn(`Entity ${this.id} does not have an associated Object3D to set render order.`);
+        }
+    }
+
     // Method to get the THREE.Object3D associated with this entity, if any
     public getObject3D(): THREE.Object3D | null {
-        // Check if the entity has a MeshComponent and return its mesh
-        const meshComponent = this.getComponent(MeshComponent); // Assuming MeshComponent is defined elsewhere
+        const meshComponent = this.getComponent(MeshComponent);
         return meshComponent ? meshComponent.getMesh() : null;
+    }
+
+    // New Method to expose transform data for GUI control
+    public getTransformData(): { position: THREE.Vector3, rotation: THREE.Euler, scale: THREE.Vector3 } | null {
+        const object3D = this.getObject3D();
+        if (object3D) {
+            return {
+                position: object3D.position.clone(),
+                rotation: object3D.rotation.clone(),
+                scale: object3D.scale.clone(),
+            };
+        } else {
+            console.warn(`Entity ${this.id} does not have an associated Object3D to get transform data.`);
+            return null;
+        }
     }
 }

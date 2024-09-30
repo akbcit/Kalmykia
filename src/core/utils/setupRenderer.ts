@@ -12,7 +12,7 @@ import { ScreenProps } from "../../types/screen/ScreenProps"; // Import ScreenPr
  */
 export function setupRenderer(container: HTMLElement, props?: ScreenProps): THREE.WebGLRenderer {
     // Create a new WebGLRenderer with antialiasing based on props or default to true
-    const renderer = new THREE.WebGLRenderer({ antialias: props?.antialias ?? true });
+    const renderer = new THREE.WebGLRenderer({ antialias: props?.antialias ?? true,logarithmicDepthBuffer: true});
 
     // Set the renderer's size based on provided width and height, or default to window size
     renderer.setSize(props?.width || window.innerWidth, props?.height || window.innerHeight);

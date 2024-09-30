@@ -38,6 +38,8 @@ export interface CameraControlsProps {
     noFly?: boolean; // Disable fly mode (only for fly controls)
     dragToLook?: boolean; // Allow drag to look around (first-person and fly controls)
     enableRoll?: boolean; // Allow rolling the camera (fly controls)
+    minCameraY?: number; // Minimum Y position for the camera
+    maxLookDownAngle?: number; // Maximum downward angle for looking down
 }
 
 // Base camera properties including controls
