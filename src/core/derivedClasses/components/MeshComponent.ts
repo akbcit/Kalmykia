@@ -17,10 +17,31 @@ export class MeshComponent extends Component {
         return this.mesh;
     }
 
-    // Method to update the mesh properties, if necessary
-    public update(delta: number): void {
-    
+    // New Method to get the geometry of the mesh
+    public getGeometry(): THREE.BufferGeometry | null {
+        return this.mesh.geometry instanceof THREE.BufferGeometry ? this.mesh.geometry : null;
     }
+
+   // Method to update the mesh's geometry and material
+  public updateMesh(newGeometry: THREE.BufferGeometry, newMaterial?: THREE.Material | THREE.Material[]): void {
+    // Dispose of the existing geometry and replace it with the new one
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = newGeometry;
+
+    // If a new material is provided, update the material as well
+    if (newMaterial) {
+      if (Array.isArray(this.mesh.material)) {
+        // Dispose of the current array of materials
+        this.mesh.material.forEach((material) => material.dispose());
+      } else {
+        // Dispose of the single material instance
+        this.mesh.material.dispose();
+      }
+      this.mesh.material = newMaterial;
+    }
+    this.mesh.geometry.computeVertexNormals(); // Optionally recompute normals after geometry change
+  }
+
 
     // Clean up any resources used by the mesh when the component is disposed
     public dispose(): void {
@@ -30,7 +51,7 @@ export class MeshComponent extends Component {
         // Dispose of the mesh material(s), handling both single material and array of materials
         if (Array.isArray(this.mesh.material)) {
             // If material is an array, dispose of each material in the array
-            this.mesh.material.forEach(material => material.dispose());
+            this.mesh.material.forEach((material) => material.dispose());
         } else {
             // If material is a single instance, dispose directly
             this.mesh.material.dispose();

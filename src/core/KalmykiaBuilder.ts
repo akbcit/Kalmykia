@@ -12,6 +12,7 @@ import { LightOptions } from './derivedClasses/components/light/LightOptions';
 import { LightFactory } from './derivedClasses/components/light/LightFactory';
 import { RectangularTerrain } from './derivedClasses/entites/terrains/RectangularTerrain';
 import { IrregularTerrain } from './derivedClasses/entites/terrains/IrregularTerrain';
+import { Terrain } from './derivedClasses/entites/terrains/Terrain';
 
 export class KalmykiaBuilder {
     private engine: Kalmykia;
@@ -89,7 +90,7 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addTerrain(terrain: RectangularTerrain | IrregularTerrain): KalmykiaBuilder {
+    addTerrain(terrain: Terrain): KalmykiaBuilder {
         if (this.scene) {
             this.scene.addEntity(terrain);
         }

@@ -1,4 +1,3 @@
-// src/index.ts
 import * as THREE from 'three';
 import { GUI } from 'dat.gui';
 import { CameraType } from './types/camera/CameraProps';
@@ -6,11 +5,11 @@ import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/water/Water';
-import { IrregularPlaneGeometry } from './core/derivedClasses/entites/geometries/primitives/IrregularPlaneGeometry';
-import { RectangularTerrain } from './core/derivedClasses/entites/terrains/RectangularTerrain';
-import { fractalBrownianMotion, seededCheckerboardFunction, seededCircularWavesFunction, seededSineWaveFunction } from './utils/noise/functions/noiseFunctions';
-import { BasinParams } from './core/derivedClasses/entites/terrains/BaseTerrain';
+import { Terrain, GeometryType, BasinParams, TerrainParams, RectangularPlaneGeometryParams } from './core/derivedClasses/entites/terrains/Terrain';
+import { fractalBrownianMotion, seededCircularWavesFunction } from './utils/noise/functions/noiseFunctions';
+import { PartialGeometryParams } from './core/derivedClasses/entites/geometries/custom/PartialGeometry';
 
+// Initialize material factory and materials
 const materialFactory = new MaterialFactory();
 const doubleSidedPlaneMaterial = materialFactory.createNonShinyMossMaterial();
 
@@ -25,7 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Create a new WaterEntity
   const waterParams: WaterEntityParams = {
-    geometry: new IrregularPlaneGeometry({ radius: 20 }),
+    geometry: new THREE.CircleGeometry(20, 32),
     sunColor: 0xffffff, // Sunlight color
     waterColor: 0x001e0f, // Water surface color
     distortionScale: 4, // Scale of water surface distortion
@@ -39,6 +38,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const waterEntity = new WaterEntity(waterParams);
 
+  // Define basins for the terrain
   const basins: BasinParams[] = [
     {
       position: new THREE.Vector2(0, 0), // Basin position at center
@@ -48,24 +48,42 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   ];
 
-  // Create terrain with basins
-  const noisyTerrain = new RectangularTerrain({
-    material: doubleSidedPlaneMaterial,
-    noiseScale: 100,
-    heightFactor: 10,
-    baseHeight: 0, // Set base height of the terrain
-    rectangularPlaneParams: {
+  // Create terrain parameters with geometry type and properties
+  const terrainParams: TerrainParams = {
+    geometryType: GeometryType.Rectangular, // Choose Rectangular geometry
+    geometryParams: {
       width: 200,
       height: 200,
       widthSegments: 50,
       heightSegments: 50,
     },
+    material: doubleSidedPlaneMaterial,
+    noiseScale: 100,
+    heightFactor: 10,
+    baseHeight: 0, // Set base height of the terrain
     noiseFunction: softHillNoiseFunction,
-    basins, // Pass the basins array to the terrain
-  });
+    useNoise: true,
+    basins,
+  };
+
+  // Create terrain using the new Terrain class
+  const terrain = new Terrain(terrainParams);
+
+  // Visualize the partial geometry for a region
+  const partialParams: PartialGeometryParams = {
+    center: new THREE.Vector2(0, 0), // Set center point for partial geometry
+    radius: 30, // Set radius around the center to extract partial geometry
+    heightRange: [0, 10], // Correctly defined as a tuple with two numbers
+    irregularFactor: 0.5, // Add some irregularity to the edges
+    falloff: 'smooth', // Type of falloff for clipping
+  };
+
+  // Create partial geometry based on defined parameters
+  const partialGeometry = terrain.createPartialGeometry(partialParams);
+  console.log(partialGeometry);
 
   // Get the lowest point of the first basin to position the water
-  const lowestPoint = noisyTerrain.getBasinLowestPoint(0); // Get the lowest point of the first basin
+  const lowestPoint = terrain.getBasinLowestPoint(0); // Get the lowest point of the first basin
 
   waterEntity.setPosition(0, 1, 0);
 
@@ -85,7 +103,7 @@ window.addEventListener('DOMContentLoaded', () => {
         target: new THREE.Vector3(0, 0, 0),
         autoRotate: false,
         minPolarAngle: 0.1,
-        maxPolarAngle: Math.PI / 4  ,
+        maxPolarAngle: Math.PI / 4,
         minDistance: 5,
         maxDistance: 1000,
         restrictPanToXZPlane: true,
@@ -98,7 +116,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .addLight(LightFactory.createLight({ type: 'directional', color: 0xffffff, position: new THREE.Vector3(100, 100, 10) }))
     .addAmbientLight(0.5)
     .addEntity(waterEntity)
-    .addTerrain(noisyTerrain)
+    .addTerrain(terrain)
     .build();
 
   // Add dat.GUI for controlling water properties
@@ -116,50 +134,54 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Define a proxy object for dynamic updates
   const terrainProps = {
-    noiseScale: noisyTerrain.noiseScale,
-    heightFactor: noisyTerrain.heightFactor,
-    baseHeight: noisyTerrain.baseHeight,
-    widthSegments: noisyTerrain.rectangularPlaneParams.widthSegments,
-    heightSegments: noisyTerrain.rectangularPlaneParams.heightSegments,
+    noiseScale: terrain.getNoiseScale(),
+    heightFactor: terrain.getHeightFactor(),
+    baseHeight: terrain.getBaseHeight(),
+    widthSegments: (terrain.getGeometryParams() as RectangularPlaneGeometryParams).widthSegments,
+    heightSegments: (terrain.getGeometryParams() as RectangularPlaneGeometryParams).heightSegments,
     basinDepth: basins[0].depth,
   };
 
   // Add controls for terrain properties that affect hill formation
   terrainFolder.add(terrainProps, 'noiseScale', 1, 200, 1).name('Noise Scale')
     .onChange((value: number) => {
-      noisyTerrain.noiseScale = value;
-      noisyTerrain.rebuildTerrain(); // Rebuild terrain on change
+      terrain.setNoiseScale(value);
+      terrain.rebuildTerrain(); // Rebuild terrain on change
     });
 
   terrainFolder.add(terrainProps, 'heightFactor', 1, 20, 0.1).name('Height Factor')
     .onChange((value: number) => {
-      noisyTerrain.heightFactor = value;
-      noisyTerrain.rebuildTerrain(); // Rebuild terrain on change
+      terrain.setHeightFactor(value);
+      terrain.rebuildTerrain(); // Rebuild terrain on change
     });
 
   terrainFolder.add(terrainProps, 'baseHeight', -10, 10, 0.1).name('Base Height')
     .onChange((value: number) => {
-      noisyTerrain.baseHeight = value;
-      noisyTerrain.rebuildTerrain(); // Rebuild terrain on change
+      terrain.setBaseHeight(value);
+      terrain.rebuildTerrain(); // Rebuild terrain on change
     });
 
   terrainFolder.add(terrainProps, 'widthSegments', 1, 200, 1).name('Width Segments')
     .onChange((value: number) => {
-      noisyTerrain.rectangularPlaneParams.widthSegments = value;
-      noisyTerrain.rebuildTerrain(); // Rebuild terrain with new mesh resolution
+      const newParams = terrain.getGeometryParams() as RectangularPlaneGeometryParams;
+      newParams.widthSegments = value;
+      terrain.setGeometryParams(newParams);
+      terrain.rebuildTerrain(); // Rebuild terrain with new mesh resolution
     });
 
   terrainFolder.add(terrainProps, 'heightSegments', 1, 200, 1).name('Height Segments')
     .onChange((value: number) => {
-      noisyTerrain.rectangularPlaneParams.heightSegments = value;
-      noisyTerrain.rebuildTerrain(); // Rebuild terrain with new mesh resolution
+      const newParams = terrain.getGeometryParams() as RectangularPlaneGeometryParams;
+      newParams.heightSegments = value;
+      terrain.setGeometryParams(newParams);
+      terrain.rebuildTerrain(); // Rebuild terrain with new mesh resolution
     });
 
   terrainFolder.add(terrainProps, 'basinDepth', 1, 20, 0.1).name('Basin Depth')
     .onChange((value: number) => {
       basins[0].depth = value;
-      noisyTerrain.clearBasins();
-      noisyTerrain.addBasin(basins[0]); // Update terrain with new basin depth
+      terrain.clearBasins();
+      terrain.addBasin(basins[0]); // Update terrain with new basin depth
     });
 
   terrainFolder.open();
