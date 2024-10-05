@@ -237,10 +237,7 @@ export class Terrain extends Entity {
 
   // Method to create partial geometry based on custom region definition
   public createPartialGeometry(params: PartialGeometryParams): THREE.BufferGeometry | null {
-    const { center, radius, heightRange, irregularFactor, falloff } = params;
-
-    const validHeightRange: [number, number] | undefined =
-      heightRange && heightRange.length === 2 ? (heightRange as [number, number]) : undefined;
+    const { center, radius, edgeSmoothing, noiseIntensity } = params;
 
     const meshComponent = this.getComponent(MeshComponent);
     if (!meshComponent) {
@@ -258,9 +255,7 @@ export class Terrain extends Entity {
       const partialGeometry = new PartialGeometry(terrainGeometry, {
         center,
         radius,
-        heightRange: validHeightRange,
-        irregularFactor,
-        falloff,
+        edgeSmoothing, noiseIntensity
       });
 
       return partialGeometry;

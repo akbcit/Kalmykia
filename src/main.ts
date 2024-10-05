@@ -8,6 +8,9 @@ import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/wa
 import { Terrain, GeometryType, BasinParams, TerrainParams, RectangularPlaneGeometryParams } from './core/derivedClasses/entites/terrains/Terrain';
 import { fractalBrownianMotion, seededCircularWavesFunction } from './utils/noise/functions/noiseFunctions';
 import { PartialGeometryParams } from './core/derivedClasses/entites/geometries/custom/PartialGeometry';
+import { Entity } from './core/parentClasses/Entity';
+import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
+import { PositionComponent } from './core/derivedClasses/components/PositionComponent';
 
 // Initialize material factory and materials
 const materialFactory = new MaterialFactory();
@@ -71,16 +74,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Visualize the partial geometry for a region
   const partialParams: PartialGeometryParams = {
-    center: new THREE.Vector2(0, 0), // Set center point for partial geometry
-    radius: 30, // Set radius around the center to extract partial geometry
-    heightRange: [0, 10], // Correctly defined as a tuple with two numbers
-    irregularFactor: 0.5, // Add some irregularity to the edges
-    falloff: 'smooth', // Type of falloff for clipping
+    center: new THREE.Vector2(0, 3), // Set center point for partial geometry
+    radius: 30,
+    edgeSmoothing: true,
+    noiseIntensity: 10,
+    smoothingRadius:0.3
   };
 
   // Create partial geometry based on defined parameters
   const partialGeometry = terrain.createPartialGeometry(partialParams);
-  console.log(partialGeometry);
+  let partialGeomEntity = new Entity();
+
+  // create a mesh
+  if (partialGeometry) {
+    const partialGeomMaterial = materialFactory.createGrassyTerrainMaterial();
+    const mesh = new MeshComponent(partialGeometry, partialGeomMaterial);
+    const newPos = new PositionComponent();
+    partialGeomEntity.addComponent(mesh);
+  }
 
   // Get the lowest point of the first basin to position the water
   const lowestPoint = terrain.getBasinLowestPoint(0); // Get the lowest point of the first basin
@@ -116,7 +127,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .addLight(LightFactory.createLight({ type: 'directional', color: 0xffffff, position: new THREE.Vector3(100, 100, 10) }))
     .addAmbientLight(0.5)
     .addEntity(waterEntity)
-    .addTerrain(terrain)
+    .addTerrain(terrain).addEntity(partialGeomEntity)
     .build();
 
   // Add dat.GUI for controlling water properties
