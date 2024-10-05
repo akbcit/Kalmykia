@@ -1,5 +1,6 @@
 // src/core/Entity.ts
 import { MeshComponent } from "../derivedClasses/components/MeshComponent";
+import { PositionComponent } from "../derivedClasses/components/PositionComponent";
 import { Component } from "./Component";
 import * as THREE from "three";
 
@@ -14,28 +15,37 @@ export class Entity {
         this.components = new Map<string, Component>();
     }
 
+    // Private method to check if the component is unique
+    private hasUniqueComponent(componentName: string): boolean {
+        return this.components.has(componentName);
+    }
+
     public getId(): number {
         return this.id;
     }
 
     public addComponent(component: Component): this {
         const componentName = component.constructor.name;
-        if (this.components.has(componentName)) {
+
+         // Check for unique component before adding
+         if (this.hasUniqueComponent(componentName)) {
             console.warn(`Entity ${this.id} already has a component of type ${componentName}.`);
+            return this;
         }
+
         this.components.set(componentName, component);
         return this;
     }
 
-    public getComponent<T extends Component>(type: { new (...args: any[]): T }): T | undefined {
+    public getComponent<T extends Component>(type: { new(...args: any[]): T }): T | undefined {
         return this.components.get(type.name) as T;
     }
 
-    public hasComponent<T extends Component>(type: { new (...args: any[]): T }): boolean {
+    public hasComponent<T extends Component>(type: { new(...args: any[]): T }): boolean {
         return this.components.has(type.name);
     }
 
-    public removeComponent<T extends Component>(type: { new (...args: any[]): T }): void {
+    public removeComponent<T extends Component>(type: { new(...args: any[]): T }): void {
         const componentName = type.name;
         const component = this.components.get(componentName);
         if (component) {
