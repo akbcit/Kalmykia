@@ -1,18 +1,20 @@
-// src/core/Entity.ts
 import { MeshComponent } from "../derivedClasses/components/MeshComponent";
-import { PositionComponent } from "../derivedClasses/components/PositionComponent";
 import { Component } from "./Component";
 import * as THREE from "three";
 
 let nextEntityId = 0;
 
 export class Entity {
+
     private id: number;
     private components: Map<string, Component>;
+    private position: THREE.Vector3; // New property to store the entity's position
+    private object3D: THREE.Object3D | null = null;
 
     constructor() {
         this.id = nextEntityId++;
         this.components = new Map<string, Component>();
+        this.position = new THREE.Vector3(0, 0, 0); // Initialize position with a default value
     }
 
     // Private method to check if the component is unique
@@ -27,10 +29,15 @@ export class Entity {
     public addComponent(component: Component): this {
         const componentName = component.constructor.name;
 
-         // Check for unique component before adding
-         if (this.hasUniqueComponent(componentName)) {
+        // Check for unique component before adding
+        if (this.hasUniqueComponent(componentName)) {
             console.warn(`Entity ${this.id} already has a component of type ${componentName}.`);
             return this;
+        }
+
+        // Explicitly set the MeshComponent if the added component is a MeshComponent
+        if (component instanceof MeshComponent) {
+            this.components.set("MeshComponent", component); // Set the MeshComponent with a specific key
         }
 
         this.components.set(componentName, component);
@@ -69,21 +76,27 @@ export class Entity {
 
     // Position-related methods
     public setPosition(x: number, y: number, z: number): void {
-        const object3D = this.getObject3D();
-        if (object3D) {
-            object3D.position.set(x, y, z);
-        } else {
-            console.warn(`Entity ${this.id} does not have an associated Object3D to set position.`);
-        }
+        this.position.set(x, y, z); // Update the internal position property
+        this.syncPositionWithObject3D(); // Sync the position with the Object3D
     }
 
     public setPositionVector(position: THREE.Vector3): void {
-        this.setPosition(position.x, position.y, position.z);
+        this.position.copy(position); // Update the internal position property
+        this.syncPositionWithObject3D(); // Sync the position with the Object3D
     }
 
-    public getPosition(): THREE.Vector3 | null {
+    public getPosition(): THREE.Vector3 {
+        return this.position.clone(); // Return a copy of the internal position property
+    }
+
+    // Sync the position property with the Object3D if it exists
+    private syncPositionWithObject3D(): void {
         const object3D = this.getObject3D();
-        return object3D ? object3D.position.clone() : null;
+        if (object3D) {
+            object3D.position.copy(this.position);
+        } else {
+            console.warn(`Entity ${this.id} does not have an associated Object3D to synchronize position.`);
+        }
     }
 
     // Rotation-related methods
@@ -126,10 +139,24 @@ export class Entity {
         }
     }
 
-    // Method to get the THREE.Object3D associated with this entity, if any
+    public getObject3DInstance(): THREE.Object3D | null {
+        return this.object3D;
+    }
+
     public getObject3D(): THREE.Object3D | null {
         const meshComponent = this.getComponent(MeshComponent);
-        return meshComponent ? meshComponent.getMesh() : null;
+        if (meshComponent) {
+            return meshComponent.getMesh();
+        } else {
+            // Log a warning only if the MeshComponent is expected to exist at this point
+            console.warn(`Entity ${this.id} does not have an associated MeshComponent yet.`);
+            return null;
+        }
+    }
+
+    // Add a new setter method to the Entity class
+    public setObject3DInstance(object3D: THREE.Object3D | null): void {
+        this.object3D = object3D;
     }
 
     // New Method to expose transform data for GUI control
@@ -137,7 +164,7 @@ export class Entity {
         const object3D = this.getObject3D();
         if (object3D) {
             return {
-                position: object3D.position.clone(),
+                position: this.position.clone(), // Use the internal position property
                 rotation: object3D.rotation.clone(),
                 scale: object3D.scale.clone(),
             };

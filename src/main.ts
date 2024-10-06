@@ -11,6 +11,7 @@ import { PartialGeometryParams } from './core/derivedClasses/entites/geometries/
 import { Entity } from './core/parentClasses/Entity';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 import { PositionComponent } from './core/derivedClasses/components/PositionComponent';
+import { GLTFEntity } from './core/derivedClasses/entites/gtlf/GTLFEntity';
 
 // Initialize material factory and materials
 const materialFactory = new MaterialFactory();
@@ -41,6 +42,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const waterEntity = new WaterEntity(waterParams);
 
+  // Path to the Flower.glb model
+  const duckModelPath = 'src/core/derivedClasses/entites/gtlf/models/duck/Duck.gltf';
+
+  // Create a new GLTFEntity and position it in the scene
+  const duckEntity = new GLTFEntity(duckModelPath, new THREE.Vector3(0, 5, 0), new THREE.Vector3(5, 5, 5));
+
+
   // Define basins for the terrain
   const basins: BasinParams[] = [
     {
@@ -55,10 +63,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const terrainParams: TerrainParams = {
     geometryType: GeometryType.Rectangular, // Choose Rectangular geometry
     geometryParams: {
-      width: 200,
-      height: 200,
-      widthSegments: 50,
-      heightSegments: 50,
+      width: 400,
+      height: 400,
+      widthSegments: 100,
+      heightSegments: 100,
     },
     material: doubleSidedPlaneMaterial,
     noiseScale: 100,
@@ -74,11 +82,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Visualize the partial geometry for a region
   const partialParams: PartialGeometryParams = {
-    center: new THREE.Vector2(0, 3), // Set center point for partial geometry
-    radius: 30,
+    center: new THREE.Vector2(0, 0), // Set center point for partial geometry
+    radius: 25,
     edgeSmoothing: true,
-    noiseIntensity: 10,
-    smoothingRadius:0.3
+    noiseIntensity: 0,
+    smoothingRadius: 0,
   };
 
   // Create partial geometry based on defined parameters
@@ -87,9 +95,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // create a mesh
   if (partialGeometry) {
-    const partialGeomMaterial = materialFactory.createGrassyTerrainMaterial();
+    const partialGeomMaterial = materialFactory.createWetMudMaterial();
     const mesh = new MeshComponent(partialGeometry, partialGeomMaterial);
-    const newPos = new PositionComponent();
     partialGeomEntity.addComponent(mesh);
   }
 
@@ -127,7 +134,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .addLight(LightFactory.createLight({ type: 'directional', color: 0xffffff, position: new THREE.Vector3(100, 100, 10) }))
     .addAmbientLight(0.5)
     .addEntity(waterEntity)
-    .addTerrain(terrain).addEntity(partialGeomEntity)
+    .addTerrain(terrain).addEntity(partialGeomEntity).addEntity(duckEntity)
     .build();
 
   // Add dat.GUI for controlling water properties
@@ -196,6 +203,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
   terrainFolder.open();
+
+  console.log(duckEntity.getObject3D())
 
   // Register update callback for animations
   engine.sceneManager.getCurrentScene()?.registerUpdateCallback((delta: number) => {

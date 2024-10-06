@@ -102,9 +102,12 @@ export class Terrain extends Entity {
   private createAndAddMesh(): void {
     const geometry = this.createTerrainGeometry();
     this.applyNoiseToTerrain(geometry);
-
+  
+    // Create and add MeshComponent
     this.meshComponent = new MeshComponent(geometry, this.material);
     this.addComponent(this.meshComponent);
+  
+    // Assign mesh to the terrain's internal mesh property for reference
     this.mesh = this.meshComponent.getMesh();
   }
 
@@ -163,14 +166,19 @@ export class Terrain extends Entity {
     positionAttribute.needsUpdate = true;
   }
 
-  // Method to dynamically update the terrain's geometry when properties change
-  public rebuildTerrain(): void {
-    if (this.meshComponent) {
-      const newGeometry = this.createTerrainGeometry();
-      this.applyNoiseToTerrain(newGeometry);
-      this.meshComponent.updateMesh(newGeometry, this.meshComponent.getMesh().material);
-    }
+ // Method to dynamically update the terrain's geometry when properties change
+public rebuildTerrain(): void {
+  if (this.meshComponent) {
+    const newGeometry = this.createTerrainGeometry();
+    this.applyNoiseToTerrain(newGeometry);
+    
+    // Update the MeshComponent's geometry and keep the material
+    this.meshComponent.updateMesh(newGeometry, this.meshComponent.getMesh().material);
+
+    // Update the internal mesh reference as well
+    this.mesh = this.meshComponent.getMesh();
   }
+}
 
   // Method to add a basin dynamically
   public addBasin(basin: BasinParams): void {
@@ -267,7 +275,8 @@ export class Terrain extends Entity {
 
   // Method to get the THREE.Object3D associated with this entity
   public getObject3D(): THREE.Object3D | null {
-    return this.mesh;
+    const meshComponent = this.getComponent(MeshComponent);
+    return meshComponent ? meshComponent.getMesh() : null;
   }
 
   // Apply polygon offset settings to avoid z-fighting issues

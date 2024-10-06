@@ -10,8 +10,6 @@ import { Entity } from './parentClasses/Entity';
 import { GameObject } from './derivedClasses/entites/GameObject';
 import { LightOptions } from './derivedClasses/components/light/LightOptions';
 import { LightFactory } from './derivedClasses/components/light/LightFactory';
-import { RectangularTerrain } from './derivedClasses/entites/terrains/RectangularTerrain';
-import { IrregularTerrain } from './derivedClasses/entites/terrains/IrregularTerrain';
 import { Terrain } from './derivedClasses/entites/terrains/Terrain';
 
 export class KalmykiaBuilder {
