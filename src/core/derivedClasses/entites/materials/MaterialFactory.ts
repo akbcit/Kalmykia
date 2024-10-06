@@ -275,10 +275,40 @@ export class MaterialFactory {
             colorTexture.wrapS = colorTexture.wrapT = THREE.RepeatWrapping;
             colorTexture.repeat.set(10, 10); // Repeat the texture for large terrains
         }
-    
+
         return new THREE.MeshLambertMaterial({
             map: colorTexture,      // Base color map
             side: THREE.DoubleSide, // Render on both sides
+        });
+    }
+
+    public createWetMudMaterial(): THREE.MeshStandardMaterial {
+        // Load each texture map with their respective paths
+        const colorTexture = this.loadTexture('src/assets/textures/mud/ground_0005_basecolor_1k.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/mud/ground_0005_ambient_occlusion_1k.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/mud/ground_0005_height_1k.png');
+        const normalTexture = this.loadTexture('src/assets/textures/mud/ground_0005_normal_1k.png'); // Normal texture
+        const roughnessTexture = this.loadTexture('src/assets/textures/mud/ground_0005_roughness_1k.jpg');
+    
+        // Ensure textures are set to repeat and wrap correctly for large terrains
+        [colorTexture, ambientOcclusionTexture, displacementTexture, normalTexture, roughnessTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(10, 10); // Repeat the texture for large terrains
+            }
+        });
+    
+        // Create and return the material with all texture maps applied
+        return new THREE.MeshStandardMaterial({
+            map: colorTexture,                          // Base color map
+            aoMap: ambientOcclusionTexture,             // Ambient Occlusion map
+            displacementMap: displacementTexture,       // Displacement map for surface detail
+            displacementScale: 0.15,                    // Scale of displacement, adjust as needed
+            normalMap: normalTexture,                   // Normal map for surface details
+            roughnessMap: roughnessTexture,             // Roughness map for material roughness
+            roughness: 0.6,                             // Slightly lower roughness for wet appearance
+            metalness: 0,                             // Slight metalness for a shiny wet look
+            side: THREE.DoubleSide,                     // Render on both sides
         });
     }
 

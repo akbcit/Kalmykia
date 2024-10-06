@@ -97,9 +97,6 @@ export class WaterEntity extends Entity {
     }
 
     const waterMaterial = this.water.material;
-    // waterMaterial.polygonOffset = true;
-    // waterMaterial.polygonOffsetFactor  = 10;
-    // waterMaterial.polygonOffsetUnits  = 10;
     waterMaterial.depthWrite = false; // Prevent water from affecting depth buffer
     waterMaterial.depthTest = true; // Enable depth testing
     waterMaterial.depthFunc = THREE.LessEqualDepth;
@@ -120,7 +117,6 @@ export class WaterEntity extends Entity {
 
     // Rotate and position the water object
     this.water.rotation.x = -Math.PI / 2; // Rotate to lie flat
-    this.water.position.y = 0;
 
     // Set wave size and flow direction if provided
     if (params.size !== undefined) this.water.material.uniforms['size'].value = params.size;

@@ -26,7 +26,6 @@ export class PartialGeometry extends THREE.BufferGeometry {
     this.copy(clippedGeometry);
   }
 
-  // Method to clip geometry based on center and radius
   clipGeometry(
     originalGeometry: THREE.BufferGeometry,
     center: THREE.Vector3,
@@ -35,74 +34,83 @@ export class PartialGeometry extends THREE.BufferGeometry {
     noiseIntensity: number,
     smoothingRadius: number
   ): THREE.BufferGeometry {
-    // Clone the original geometry to modify
     const geom = originalGeometry.clone();
     const position = geom.attributes.position as THREE.BufferAttribute;
     const index = geom.index;
-
+    const uv = geom.attributes.uv as THREE.BufferAttribute | undefined;
+  
     if (!position) {
       console.error('Geometry position attribute is undefined.');
       return new THREE.BufferGeometry();
     }
-
-    // Create arrays to store clipped positions and indices
+  
     const newPositions: number[] = [];
     const newIndices: number[] = [];
-    const vertexMap: Map<number, number> = new Map(); // Map to store the new index of each vertex
-
+    const newUVs: number[] = [];
+    const vertexMap: Map<number, number> = new Map();
+  
     let newIndex = 0;
-    const noise = createNoise2D(); // Initialize the noise generator
-
-    // Iterate through the vertices and retain only those within the radius
+    const noise = createNoise2D();
+  
     for (let i = 0; i < position.count; i++) {
       const vertex = new THREE.Vector3().fromBufferAttribute(position, i);
-      const distance = vertex.distanceTo(new THREE.Vector3(center.x, vertex.y, center.z));
-
-      // Check if the vertex is within the radius
-      if (distance <= radius) {
-        // If edge smoothing is enabled and the vertex is near the edge, apply smoothing
-        if (edgeSmoothing && distance >= radius - smoothingRadius) {
-          const factor = (radius - distance) / smoothingRadius;
-          const smoothedVertex = vertex.clone().lerp(center, 1 - factor); // Linear interpolation
-          vertex.copy(smoothedVertex);
-
-          // Optionally, add noise for more natural smoothing
+      
+      // Calculate distance only using XZ plane
+      const distanceXZ = new THREE.Vector2(vertex.x, vertex.z).distanceTo(new THREE.Vector2(center.x, center.z));
+  
+      // Include vertices within the specified radius in the XZ plane
+      if (distanceXZ <= radius) {
+        // Smooth edges if the vertex is near the boundary of the radius
+        if (edgeSmoothing && distanceXZ >= radius - smoothingRadius) {
+          // Project the vertex onto the circular boundary
+          const direction = new THREE.Vector3(vertex.x - center.x, 0, vertex.z - center.z).normalize();
+          vertex.copy(center.clone().add(direction.multiplyScalar(radius)));
+  
           if (noiseIntensity > 0) {
             const noiseValue = noise(vertex.x * 0.1, vertex.z * 0.1) * noiseIntensity;
-            vertex.add(vertex.clone().sub(center).normalize().multiplyScalar(noiseValue));
+            vertex.add(direction.multiplyScalar(noiseValue));
           }
         }
+        
         newPositions.push(vertex.x, vertex.y, vertex.z);
-        vertexMap.set(i, newIndex++); // Map old index to new index
+  
+        if (uv) {
+          const u = uv.getX(i);
+          const v = uv.getY(i);
+          newUVs.push(u, v);
+        }
+  
+        vertexMap.set(i, newIndex++);
       }
     }
-
-    // If no vertices are within the radius, return an empty geometry
+  
     if (newPositions.length === 0) {
       console.warn('No vertices found within the specified region. Returning an empty geometry.');
       return new THREE.BufferGeometry();
     }
-
-    // Create a new index array by mapping old indices to new ones, ensuring valid faces
+  
     if (index) {
       for (let i = 0; i < index.count; i += 3) {
         const a = index.getX(i);
         const b = index.getX(i + 1);
         const c = index.getX(i + 2);
-
-        // Only include faces where all vertices are within the new geometry
+  
         if (vertexMap.has(a) && vertexMap.has(b) && vertexMap.has(c)) {
           newIndices.push(vertexMap.get(a)!, vertexMap.get(b)!, vertexMap.get(c)!);
         }
       }
     }
-
-    // Create a new geometry with the clipped vertices and indices
+  
     const newGeometry = new THREE.BufferGeometry();
     newGeometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
+  
+    if (newUVs.length > 0) {
+      newGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(newUVs, 2));
+    }
+  
     newGeometry.setIndex(newIndices);
-    newGeometry.computeVertexNormals(); // Recompute normals for the new geometry
-
+    newGeometry.computeVertexNormals();
+  
     return newGeometry;
   }
 }

@@ -4,7 +4,6 @@ import { EventListenerConfig } from '../../types/eventListeners/EventListenerCon
 
 export const createPanKeyListener = (controls: OrbitControls, panSpeed: number = 0.5): EventListenerConfig<KeyboardEvent> => {
     const panHandler = (event: KeyboardEvent) => {
-        console.log(event);
         switch (event.key) {
             case 'ArrowUp':
                 controls.target.z -= panSpeed;
