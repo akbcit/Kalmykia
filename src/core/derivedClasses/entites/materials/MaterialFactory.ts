@@ -7,6 +7,7 @@ import {
     ShaderMaterialOptions, RawShaderMaterialOptions
 } from "./types/MaterialOptions";
 import { Water } from 'three/examples/jsm/objects/Water';
+import { BranchMaterialParams, LeafMaterialParams, TrunkMaterialParams } from "../trees/types/TreeParams";
 
 export class MaterialFactory {
     private materialOptions: BaseMaterialOptions;
@@ -289,7 +290,7 @@ export class MaterialFactory {
         const displacementTexture = this.loadTexture('src/assets/textures/mud/ground_0005_height_1k.png');
         const normalTexture = this.loadTexture('src/assets/textures/mud/ground_0005_normal_1k.png'); // Normal texture
         const roughnessTexture = this.loadTexture('src/assets/textures/mud/ground_0005_roughness_1k.jpg');
-    
+
         // Ensure textures are set to repeat and wrap correctly for large terrains
         [colorTexture, ambientOcclusionTexture, displacementTexture, normalTexture, roughnessTexture].forEach((texture) => {
             if (texture) {
@@ -297,7 +298,7 @@ export class MaterialFactory {
                 texture.repeat.set(10, 10); // Repeat the texture for large terrains
             }
         });
-    
+
         // Create and return the material with all texture maps applied
         return new THREE.MeshStandardMaterial({
             map: colorTexture,                          // Base color map
@@ -311,5 +312,61 @@ export class MaterialFactory {
             side: THREE.DoubleSide,                     // Render on both sides
         });
     }
+
+    public createTrunkMaterial(params?: TrunkMaterialParams): THREE.MeshStandardMaterial {
+        const materialParams: THREE.MeshStandardMaterialParameters = {
+          color: params?.color || 0x8B4513,   // Default brown color for trunk
+          roughness: params?.roughness ?? 0.8,
+          metalness: params?.metalness ?? 0,
+        };
+    
+        // Apply bark texture if path is provided
+        if (params?.barkTexturePath) {
+          materialParams.map = this.textureLoader.load(params.barkTexturePath);
+        }
+    
+        // Create and return the material
+        return new THREE.MeshStandardMaterial(materialParams);
+      }
+    
+      /**
+       * Creates a material for branches using the specified BranchMaterialParams.
+       */
+      public createBranchMaterial(params?: BranchMaterialParams): THREE.MeshStandardMaterial {
+        const materialParams: THREE.MeshStandardMaterialParameters = {
+          color: params?.color || 0x8B4513,   // Default brown color for branches
+          roughness: params?.roughness ?? 0.6,
+          metalness: params?.metalness ?? 0,
+        };
+    
+        // Apply branch texture if path is provided
+        if (params?.branchTexturePath) {
+          materialParams.map = this.textureLoader.load(params.branchTexturePath);
+        }
+    
+        // Create and return the material
+        return new THREE.MeshStandardMaterial(materialParams);
+      }
+    
+      /**
+       * Creates a material for leaves using the specified LeafMaterialParams.
+       */
+      public createLeafMaterial(params?: LeafMaterialParams): THREE.MeshStandardMaterial {
+        const materialParams: THREE.MeshStandardMaterialParameters = {
+          color: params?.color || 0x228B22,  // Default green color for leaves
+          roughness: params?.roughness ?? 0.5,
+          metalness: params?.metalness ?? 0,
+          opacity: params?.transparency ?? 1,
+          transparent: params?.transparency !== undefined ? true : false,
+        };
+    
+        // Apply leaf texture if path is provided
+        if (params?.leafTexturePath) {
+          materialParams.map = this.textureLoader.load(params.leafTexturePath);
+        }
+    
+        // Create and return the material
+        return new THREE.MeshStandardMaterial(materialParams);
+      }
 
 }

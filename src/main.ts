@@ -10,8 +10,9 @@ import { fractalBrownianMotion, seededCircularWavesFunction } from './utils/nois
 import { PartialGeometryParams } from './core/derivedClasses/entites/geometries/custom/PartialGeometry';
 import { Entity } from './core/parentClasses/Entity';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
-import { PositionComponent } from './core/derivedClasses/components/PositionComponent';
 import { GLTFEntity } from './core/derivedClasses/entites/gtlf/GTLFEntity';
+import { getDefaultTreeParams, TreeParams, TrunkParams } from './core/derivedClasses/entites/trees/types/TreeParams';
+import { TreeEntity } from './core/derivedClasses/entites/trees/TreeEntity';
 
 // Initialize material factory and materials
 const materialFactory = new MaterialFactory();
@@ -28,7 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Create a new WaterEntity
   const waterParams: WaterEntityParams = {
-    geometry: new THREE.CircleGeometry(20, 32),
+    geometry: new THREE.CircleGeometry(40, 32),
     sunColor: 0xffffff, // Sunlight color
     waterColor: 0x001e0f, // Water surface color
     distortionScale: 4, // Scale of water surface distortion
@@ -46,14 +47,14 @@ window.addEventListener('DOMContentLoaded', () => {
   const duckModelPath = 'src/core/derivedClasses/entites/gtlf/models/duck/Duck.gltf';
 
   // Create a new GLTFEntity and position it in the scene
-  const duckEntity = new GLTFEntity(duckModelPath, new THREE.Vector3(0, 5, 0), new THREE.Vector3(5, 5, 5));
+  const duckEntity = new GLTFEntity(duckModelPath, new THREE.Vector3(0, -0.1, 0), new THREE.Vector3(5, 5, 5));
 
 
   // Define basins for the terrain
   const basins: BasinParams[] = [
     {
       position: new THREE.Vector2(0, 0), // Basin position at center
-      radius: 20, // Radius of the basin
+      radius: 30, // Radius of the basin
       depth: 5,  // Depth of the basin (shallower to keep it close to zero)
       falloff: 'smooth',
     },
@@ -83,7 +84,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Visualize the partial geometry for a region
   const partialParams: PartialGeometryParams = {
     center: new THREE.Vector2(0, 0), // Set center point for partial geometry
-    radius: 25,
+    radius: 45,
     edgeSmoothing: true,
     noiseIntensity: 0,
     smoothingRadius: 0,
@@ -104,6 +105,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const lowestPoint = terrain.getBasinLowestPoint(0); // Get the lowest point of the first basin
 
   waterEntity.setPosition(0, 1, 0);
+
+  // Provide only the specific values to override
+  const mergedParams = getDefaultTreeParams({
+    trunkParams: {
+      trunkHeight: 30,            // Override trunk height
+      trunkBaseRadius: 3          // Override trunk base radius
+    },
+    environmentalParams: {
+      windStrength: 0.5           // Override wind strength
+    }
+  });
+
+  const myTree = new TreeEntity(mergedParams);
+
+  myTree.setPosition(50, 20, 2);
 
   // Initialize Kalmykia engine
   const engine = new KalmykiaBuilder(container)
@@ -127,14 +143,14 @@ window.addEventListener('DOMContentLoaded', () => {
         restrictPanToXZPlane: true,
       },
     })
-    .addScene('main', '#0D1B2A', 5)
+    .addScene('main', '#0D1B2A')
     .addResizeListener()
     .addPanKeyListener()
     .addRenderSystem()
     .addLight(LightFactory.createLight({ type: 'directional', color: 0xffffff, position: new THREE.Vector3(100, 100, 10) }))
     .addAmbientLight(0.5)
     .addEntity(waterEntity)
-    .addTerrain(terrain).addEntity(partialGeomEntity).addEntity(duckEntity)
+    .addTerrain(terrain).addEntity(partialGeomEntity).addEntity(duckEntity).addEntity(myTree)
     .build();
 
   // Add dat.GUI for controlling water properties
