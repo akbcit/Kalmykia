@@ -33,11 +33,19 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addScene(name: string, backgroundColor = '#333', axesHelperSize = 5): KalmykiaBuilder {
-        const scene = new Scene({ backgroundColor, axesHelper: { size: axesHelperSize } });
+    addScene(name: string, backgroundColor = '#333', axesHelperSize?: number): KalmykiaBuilder {
+        const sceneProps: { backgroundColor: string; axesHelper?: { size: number } } = { backgroundColor };
+    
+        // Conditionally add the axesHelper property only if axesHelperSize is provided and greater than 0
+        if (axesHelperSize && axesHelperSize > 0) {
+            sceneProps.axesHelper = { size: axesHelperSize };
+        }
+    
+        const scene = new Scene(sceneProps);
         this.engine.addScene(name, scene);
         this.engine.switchScene(name);
         this.scene = scene;
+    
         return this;
     }
 
