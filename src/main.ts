@@ -6,13 +6,15 @@ import { LightFactory } from './core/derivedClasses/components/light/LightFactor
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/water/Water';
 import { Terrain, GeometryType, BasinParams, TerrainParams, RectangularPlaneGeometryParams } from './core/derivedClasses/entites/terrains/Terrain';
-import { fractalBrownianMotion, seededCircularWavesFunction } from './utils/noise/functions/noiseFunctions';
+import { fractalBrownianMotion, seededCircularWavesFunction, seededSineWaveFunction } from './utils/noise/functions/noiseFunctions';
 import { PartialGeometryParams } from './core/derivedClasses/entites/geometries/custom/PartialGeometry';
 import { Entity } from './core/parentClasses/Entity';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 import { GLTFEntity } from './core/derivedClasses/entites/gtlf/GTLFEntity';
 import { getDefaultTreeParams, TreeParams, TrunkParams } from './core/derivedClasses/entites/trees/types/TreeParams';
 import { TreeEntity } from './core/derivedClasses/entites/trees/TreeEntity';
+import { IrregularTerrain, IrregularTerrainParams } from './core/derivedClasses/entites/terrains/IrregularTerrain';
+import { createNoise2D } from 'simplex-noise';
 
 // Initialize material factory and materials
 const materialFactory = new MaterialFactory();
@@ -121,6 +123,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
   myTree.setPosition(50, 20, 2);
 
+  const irregularTerrainParams: IrregularTerrainParams = {
+    terrainGeometry: {
+      center: [0, 5, 0],
+      radius: 10,
+     wiggliness:2,
+     noiseFunction: seededSineWaveFunction(0.5),
+    },
+    terrainMaterial: doubleSidedPlaneMaterial
+  };
+
+  const irregularTerrain = new IrregularTerrain(irregularTerrainParams);
+
   // Initialize Kalmykia engine
   const engine = new KalmykiaBuilder(container)
     .setCamera({
@@ -220,7 +234,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   terrainFolder.open();
 
-  console.log(duckEntity.getObject3D())
+  engine.sceneManager.getCurrentScene()?.addEntity(irregularTerrain);
 
   // Register update callback for animations
   engine.sceneManager.getCurrentScene()?.registerUpdateCallback((delta: number) => {

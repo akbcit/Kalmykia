@@ -1,69 +1,74 @@
-import * as THREE from 'three';
+import * as THREE from "three";
+import { NoiseFunction } from "../../../../../utils/noise/types/NoiseFunction";
 
-interface CustomGeometryParams {
-  vertices: Float32Array;    // Custom vertex positions
-  indices?: Uint16Array;     // Optional indices for defining faces
-  normals?: Float32Array;    // Optional normals for lighting calculations
-  uvs?: Float32Array;        // Optional UV coordinates for textures
-  colors?: Float32Array;     // Optional vertex colors
+export interface CustomGeometryParams {
+  center: [number, number, number]; // Center of the plane (x, y, z)
+  radius: number; // Radius of the circular plane
+  smoothness?: number; // Number of points for smooth interpolation
+  wiggliness?: number; // Controls edge irregularity
+  noiseFunction?: NoiseFunction; // Optional noise function for height displacement
+  heightFactor?: number; // Intensity of the bumps
 }
 
-export class CustomGeometry extends THREE.BufferGeometry {
+export class CustomGeometry {
+  private geometry: THREE.BufferGeometry;
+  private params: CustomGeometryParams;
+
   constructor(params: CustomGeometryParams) {
-    super();
-    this.setupCustomGeometry(params);
+    this.params = params;
+    const points = this.createCatmullRomPoints(); // Generate smooth points
+    this.geometry = new THREE.LatheGeometry(points, 64); // Use LatheGeometry
+    this.applyNoise(); // Apply noise-based height displacement
   }
 
-  private setupCustomGeometry({ vertices, indices, normals, uvs, colors }: CustomGeometryParams) {
-    // Set position attribute from provided vertices
-    this.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  // Generate wiggly points along the circle using Catmull-Rom splines
+  private createCatmullRomPoints(): THREE.Vector2[] {
+    const { radius, center, smoothness = 10, wiggliness = 0.1 } = this.params;
+    const [cx, , cz] = center; // Ignore Y since we are on the X-Z plane
+    const segments = 32; // Number of segments along the circle
 
-    // Set optional indices for defining custom faces
-    if (indices) {
-      this.setIndex(new THREE.BufferAttribute(indices, 1));
-    } else {
-      // If no indices are provided, generate a simple sequential index array
-      this.setIndex(this.generateDefaultIndices(vertices.length / 3));
-    }
+    // Create an array of smooth, wiggly points around the circle
+    const points = Array.from({ length: segments }, (_, i) => {
+      const angle = (i / segments) * Math.PI * 2; // Full circle in radians
+      const x = (radius + this.getWigglyOffset(wiggliness)) * Math.cos(angle);
+      const z = (radius + this.getWigglyOffset(wiggliness)) * Math.sin(angle);
+      return new THREE.Vector2(x + cx, z + cz); // Use Vector2 for LatheGeometry
+    });
 
-    // Optionally set normals
-    if (normals) {
-      this.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    } else {
-      this.computeVertexNormals();  // Automatically compute normals if not provided
-    }
+    // Use a Catmull-Rom spline to smooth the points
+    const curve = new THREE.CatmullRomCurve3(
+      points.map((p) => new THREE.Vector3(p.x, 0, p.y)), // Convert to Vector3 for curve
+      true // Closed curve
+    );
 
-    // Optionally set UV coordinates
-    if (uvs) {
-      this.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    }
-
-    // Optionally set vertex colors
-    if (colors) {
-      this.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    }
-
-    // Compute bounding volumes for better performance in rendering
-    this.computeBoundingBox();
-    this.computeBoundingSphere();
+    return curve.getPoints(smoothness * segments).map((p) => new THREE.Vector2(p.x, p.z)); // Convert back to Vector2
   }
 
-  // Generate default indices if none are provided (assumes triangles)
-  private generateDefaultIndices(vertexCount: number): THREE.BufferAttribute {
-    const indices = [];
-    for (let i = 0; i < vertexCount; i += 3) {
-      indices.push(i, i + 1, i + 2);  // Create triangles sequentially
+  // Generate random offset for wiggly edges
+  private getWigglyOffset(wiggliness: number): number {
+    return (Math.random() - 0.5) * wiggliness;
+  }
+
+  // Apply noise-based height displacement to the geometry
+  private applyNoise() {
+    const { noiseFunction, heightFactor = 1, center } = this.params;
+    if (!noiseFunction) return; // Skip if no noise function is provided
+
+    const position = this.geometry.attributes.position as THREE.BufferAttribute;
+
+    for (let i = 0; i < position.count; i++) {
+      const x = position.getX(i) + center[0];
+      const z = position.getZ(i) + center[2];
+      const noise = noiseFunction(x, z) * heightFactor; // Calculate height from noise
+      position.setY(i, noise + center[1]); // Adjust Y position with noise
     }
-    return new THREE.BufferAttribute(new Uint16Array(indices), 1);
+
+    position.needsUpdate = true; // Mark position as needing update
+    this.geometry.computeVertexNormals(); // Recompute normals for shading
   }
 
-  // Method for applying transformations (scaling, rotating, etc.)
-  applyTransformation(matrix: THREE.Matrix4) {
-    this.applyMatrix4(matrix);
-  }
-
-  // Utility to log details about the custom geometry
-  logDetails() {
-    console.log('Custom Geometry Details:', this);
+  // Get the final geometry
+  public getGeometry(): THREE.BufferGeometry {
+    return this.geometry;
   }
 }
