@@ -6,15 +6,18 @@ import { LightFactory } from './core/derivedClasses/components/light/LightFactor
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/water/Water';
 import { Terrain, GeometryType, BasinParams, TerrainParams, RectangularPlaneGeometryParams } from './core/derivedClasses/entites/terrains/Terrain';
-import { fractalBrownianMotion, seededCircularWavesFunction, seededSineWaveFunction } from './utils/noise/functions/noiseFunctions';
+import { fractalBrownianMotion, seededCircularWavesFunction, seededPlateauFunction, seededSineWaveFunction } from './utils/noise/functions/noiseFunctions';
 import { PartialGeometryParams } from './core/derivedClasses/entites/geometries/custom/PartialGeometry';
 import { Entity } from './core/parentClasses/Entity';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 import { GLTFEntity } from './core/derivedClasses/entites/gtlf/GTLFEntity';
 import { getDefaultTreeParams, TreeParams, TrunkParams } from './core/derivedClasses/entites/trees/types/TreeParams';
 import { TreeEntity } from './core/derivedClasses/entites/trees/TreeEntity';
-import { IrregularTerrain, IrregularTerrainParams } from './core/derivedClasses/entites/terrains/IrregularTerrain';
 import { createNoise2D } from 'simplex-noise';
+import { IrregularGeometryParams } from './core/derivedClasses/entites/geometries/custom/IrregularGeometry';
+import { IrregularCircularGeometry } from './core/derivedClasses/entites/geometries/custom/IrregularCircularGeometry';
+import { IrregularRectangularTerrain } from './core/derivedClasses/entites/terrains/IrregularRectangularTerrain';
+import { IrregularCircularTerrain, IrregularCircularTerrainParams } from './core/derivedClasses/entites/terrains/IrregularCircularTerrain';
 
 // Initialize material factory and materials
 const materialFactory = new MaterialFactory();
@@ -123,20 +126,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   myTree.setPosition(50, 20, 2);
 
-  const irregularTerrainParams: IrregularTerrainParams = {
-    terrainGeometry: {
-      center: [0, 50, 0],
-      radius: 100,
-     wiggliness:23,
-     noiseFunction:softHillNoiseFunction
-     },
-    terrainMaterial:doubleSidedPlaneMaterial
-  };
-
-  const irregularTerrain = new IrregularTerrain(irregularTerrainParams);
-
-
-
   // Initialize Kalmykia engine
   const engine = new KalmykiaBuilder(container)
     .setCamera({
@@ -165,8 +154,6 @@ window.addEventListener('DOMContentLoaded', () => {
     .addRenderSystem()
     .addLight(LightFactory.createLight({ type: 'directional', color: 0xffffff, position: new THREE.Vector3(100, 100, 10) }))
     .addAmbientLight(0.5)
-    .addEntity(waterEntity)
-    .addTerrain(terrain).addEntity(partialGeomEntity).addEntity(duckEntity).addEntity(myTree)
     .build();
 
   // Add dat.GUI for controlling water properties
@@ -236,8 +223,39 @@ window.addEventListener('DOMContentLoaded', () => {
 
   terrainFolder.open();
 
-  engine.sceneManager.getCurrentScene()?.addEntity(irregularTerrain);
-  
+  const params: IrregularGeometryParams = {
+    width: 100,
+    height: 100,
+    widthSegments: 100,
+    heightSegments: 100,
+    position: [0, 0, 0],
+    noiseFunction: softHillNoiseFunction,
+    heightFactor: 5
+  };
+
+  const circularTerrainParams: IrregularCircularTerrainParams = {
+    terrainGeometry: {
+      radius: 10,
+      segments: 64,
+      noiseFunction: softHillNoiseFunction,
+      heightFactor: 2,
+      position: [0, 0, 0]
+    },
+    terrainMaterial: doubleSidedPlaneMaterial
+  };
+
+  // Create an instance of the circular terrain
+  const circularTerrain = new IrregularCircularTerrain(circularTerrainParams);
+
+  // Initialize the IrregularTerrain object
+  const irregularTerrain = new IrregularRectangularTerrain({
+    terrainGeometry: params,
+    terrainMaterial: doubleSidedPlaneMaterial
+  });
+
+
+  engine.sceneManager.getCurrentScene()?.addEntity(circularTerrain)
+
   // Register update callback for animations
   engine.sceneManager.getCurrentScene()?.registerUpdateCallback((delta: number) => {
     waterEntity.updateWaterAnimation(delta);

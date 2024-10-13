@@ -1,21 +1,21 @@
 import { Entity } from "../../../parentClasses/Entity";
 import { MeshComponent } from "../../components/MeshComponent";
-import { CustomGeometry, CustomGeometryParams } from "../geometries/custom/CustomGeometry";
 import * as THREE from "three";
+import { IrregularGeometry, IrregularGeometryParams } from "../geometries/custom/IrregularGeometry";
 
-export interface IrregularTerrainParams {
-    terrainGeometry: CustomGeometryParams
+export interface IrregularRectangularTerrainParams {
+    terrainGeometry: IrregularGeometryParams
     terrainMaterial: THREE.Material
 }
 
-export class IrregularTerrain extends Entity {
+export class IrregularRectangularTerrain extends Entity {
 
-    private geometry: CustomGeometry;
+    private geometry: IrregularGeometry;
     private meshComponent: MeshComponent;
 
-    constructor(irregularTerrainParams: IrregularTerrainParams) {
+    constructor(irregularTerrainParams: IrregularRectangularTerrainParams) {
         super()
-        this.geometry = new CustomGeometry(irregularTerrainParams.terrainGeometry);
+        this.geometry = new IrregularGeometry(irregularTerrainParams.terrainGeometry);
         this.meshComponent = new MeshComponent(this.geometry.getGeometry(), irregularTerrainParams.terrainMaterial);
         this.addComponent(this.meshComponent);
     }
