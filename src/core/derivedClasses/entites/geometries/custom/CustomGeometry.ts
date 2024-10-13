@@ -1,13 +1,10 @@
 import * as THREE from "three";
-import { NoiseFunction } from "../../../../../utils/noise/types/NoiseFunction";
 
 export interface CustomGeometryParams {
   center: [number, number, number]; // Center of the plane (x, y, z)
   radius: number; // Radius of the circular plane
   smoothness?: number; // Number of points for smooth interpolation
   wiggliness?: number; // Controls edge irregularity
-  noiseFunction?: NoiseFunction; // Optional noise function for height displacement
-  heightFactor?: number; // Intensity of the bumps
 }
 
 export class CustomGeometry {
@@ -16,32 +13,24 @@ export class CustomGeometry {
 
   constructor(params: CustomGeometryParams) {
     this.params = params;
-    const points = this.createCatmullRomPoints(); // Generate smooth points
-    this.geometry = new THREE.LatheGeometry(points, 64); // Use LatheGeometry
-    this.applyNoise(); // Apply noise-based height displacement
+
+    const curvePoints = this.createCatmullRomPoints(); // Generate smooth points
+    this.geometry = this.createGeometryFromCurve(curvePoints); // Create geometry with UVs
   }
 
-  // Generate wiggly points along the circle using Catmull-Rom splines
-  private createCatmullRomPoints(): THREE.Vector2[] {
+  // Generate smooth, wiggly points along a Catmull-Rom spline
+  private createCatmullRomPoints(): THREE.Vector3[] {
     const { radius, center, smoothness = 10, wiggliness = 0.1 } = this.params;
-    const [cx, , cz] = center; // Ignore Y since we are on the X-Z plane
-    const segments = 32; // Number of segments along the circle
+    const [cx, cy, cz] = center;
+    const segments = 32; // Number of points around the circle
 
-    // Create an array of smooth, wiggly points around the circle
-    const points = Array.from({ length: segments }, (_, i) => {
-      const angle = (i / segments) * Math.PI * 2; // Full circle in radians
+    // Generate points with wiggle along the X-Z plane
+    return Array.from({ length: segments }, (_, i) => {
+      const angle = (i / segments) * Math.PI * 2;
       const x = (radius + this.getWigglyOffset(wiggliness)) * Math.cos(angle);
       const z = (radius + this.getWigglyOffset(wiggliness)) * Math.sin(angle);
-      return new THREE.Vector2(x + cx, z + cz); // Use Vector2 for LatheGeometry
+      return new THREE.Vector3(x + cx, cy, z + cz); // Points aligned on X-Z
     });
-
-    // Use a Catmull-Rom spline to smooth the points
-    const curve = new THREE.CatmullRomCurve3(
-      points.map((p) => new THREE.Vector3(p.x, 0, p.y)), // Convert to Vector3 for curve
-      true // Closed curve
-    );
-
-    return curve.getPoints(smoothness * segments).map((p) => new THREE.Vector2(p.x, p.z)); // Convert back to Vector2
   }
 
   // Generate random offset for wiggly edges
@@ -49,22 +38,39 @@ export class CustomGeometry {
     return (Math.random() - 0.5) * wiggliness;
   }
 
-  // Apply noise-based height displacement to the geometry
-  private applyNoise() {
-    const { noiseFunction, heightFactor = 1, center } = this.params;
-    if (!noiseFunction) return; // Skip if no noise function is provided
+  // Create geometry from curve points and generate UVs
+  private createGeometryFromCurve(points: THREE.Vector3[]): THREE.BufferGeometry {
+    const vertices = [];
+    const indices = [];
+    const uvs = []; // Store UV coordinates
 
-    const position = this.geometry.attributes.position as THREE.BufferAttribute;
+    // Add center point
+    const [cx, cy, cz] = this.params.center;
+    vertices.push(cx, cy, cz);
+    uvs.push(0.5, 0.5); // Center of texture is (0.5, 0.5)
 
-    for (let i = 0; i < position.count; i++) {
-      const x = position.getX(i) + center[0];
-      const z = position.getZ(i) + center[2];
-      const noise = noiseFunction(x, z) * heightFactor; // Calculate height from noise
-      position.setY(i, noise + center[1]); // Adjust Y position with noise
+    // Add curve points to vertices and calculate UVs
+    for (const point of points) {
+      vertices.push(point.x, point.y, point.z);
+      const u = 0.5 + (point.x - cx) / (2 * this.params.radius);
+      const v = 0.5 + (point.z - cz) / (2 * this.params.radius);
+      uvs.push(u, v); // Map X-Z plane points to UV coordinates
     }
 
-    position.needsUpdate = true; // Mark position as needing update
-    this.geometry.computeVertexNormals(); // Recompute normals for shading
+    // Create faces connecting the center to the curve points
+    for (let i = 1; i < points.length; i++) {
+      indices.push(0, i, i + 1);
+    }
+    indices.push(0, points.length, 1); // Close the loop
+
+    // Create BufferGeometry with vertices, indices, and UVs
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); // Set UV attribute
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals(); // Compute normals for shading
+
+    return geometry;
   }
 
   // Get the final geometry

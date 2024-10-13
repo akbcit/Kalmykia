@@ -125,15 +125,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const irregularTerrainParams: IrregularTerrainParams = {
     terrainGeometry: {
-      center: [0, 5, 0],
-      radius: 10,
-     wiggliness:2,
-     noiseFunction: seededSineWaveFunction(0.5),
-    },
-    terrainMaterial: doubleSidedPlaneMaterial
+      center: [0, 50, 0],
+      radius: 100,
+     wiggliness:23,
+     noiseFunction:softHillNoiseFunction
+     },
+    terrainMaterial:doubleSidedPlaneMaterial
   };
 
   const irregularTerrain = new IrregularTerrain(irregularTerrainParams);
+
+
 
   // Initialize Kalmykia engine
   const engine = new KalmykiaBuilder(container)
@@ -235,7 +237,7 @@ window.addEventListener('DOMContentLoaded', () => {
   terrainFolder.open();
 
   engine.sceneManager.getCurrentScene()?.addEntity(irregularTerrain);
-
+  
   // Register update callback for animations
   engine.sceneManager.getCurrentScene()?.registerUpdateCallback((delta: number) => {
     waterEntity.updateWaterAnimation(delta);
