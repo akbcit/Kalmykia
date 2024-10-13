@@ -1,143 +1,120 @@
 import * as THREE from "three";
 import { NoiseFunction } from "../../../../../utils/noise/types/NoiseFunction";
+import { BaseIrregularGeometry, BaseIrregularGeometryParams } from "./BaseIrregularGeometry";
 
-export interface IrregularCircularGeometryParams {
+export interface IrregularCircularGeometryParams extends BaseIrregularGeometryParams {
   radius: number;
-  segments?: number; // Number of subdivisions (grid density)
-  position?: [number, number, number];
-  noiseFunction: NoiseFunction;
-  heightFactor?: number;
+  segments?: number;
 }
 
-export class IrregularCircularGeometry {
-  private geometry: THREE.BufferGeometry;
-  private params: Required<IrregularCircularGeometryParams>;
+export class IrregularCircularGeometry extends BaseIrregularGeometry {
+  params: Required<IrregularCircularGeometryParams>;
 
   constructor(params: IrregularCircularGeometryParams) {
+    super(params);
     this.params = {
       radius: params.radius,
       segments: params.segments || 64,
       position: params.position || [0, 0, 0],
       noiseFunction: params.noiseFunction,
       heightFactor: params.heightFactor || 1,
+      baseHeight: params.baseHeight || 0,
     };
 
-    this.geometry = this.createCircularGridGeometry(); // Create the circular grid
-    this.applyNoise(); // Apply plane-like noise
-    this.rotateToXZPlane();
-    this.positionPlane();
+    this.createGeometry();  // Step 1: Create the geometry
+    this.initializeGeometry();  // Step 2: Initialize (store heights and apply noise)
   }
 
   /**
-   * Create a circular geometry by generating a square grid and filtering out vertices outside the circle.
+   * Create the circular geometry with UV mapping on the XZ plane.
    */
-  private createCircularGridGeometry(): THREE.BufferGeometry {
+  protected createGeometry(): void {
+    this.disposeGeometry();  // Dispose old geometry
+
     const { radius, segments } = this.params;
-    const step = (2 * radius) / segments; // Grid step size
     const vertices: number[] = [];
     const uvs: number[] = [];
     const indices: number[] = [];
-    const map: Map<string, number> = new Map(); // Track vertex indices
-
+    const vertexIndexMap: Map<string, number> = new Map();
+    const step = (2 * radius) / segments;
     let index = 0;
 
-    // Generate the square grid
+    // Generate vertices on the XZ plane instead of the XY plane
     for (let i = 0; i <= segments; i++) {
       for (let j = 0; j <= segments; j++) {
         const x = -radius + i * step;
-        const y = -radius + j * step;
+        const z = -radius + j * step;  // Use Z-axis instead of Y
 
-        // Only keep vertices inside the circular boundary
-        if (x * x + y * y <= radius * radius) {
-          vertices.push(x, y, 0); // Store the vertex
+        if (x * x + z * z <= radius * radius) {
+          vertices.push(x, 0, z);  // Use (x, 0, z) for XZ alignment
 
-          // Generate UV coordinates for texture mapping
+          // UV mapping for texture coordinates
           const u = (x + radius) / (2 * radius);
-          const v = (y + radius) / (2 * radius);
+          const v = (z + radius) / (2 * radius);  // Z-axis for UVs
           uvs.push(u, v);
 
-          map.set(`${i}-${j}`, index++); // Track vertex index
+          vertexIndexMap.set(`${i}-${j}`, index++);
         }
       }
     }
 
-    // Create triangle indices for the circular grid
+    // Generate triangle indices
     for (let i = 0; i < segments; i++) {
       for (let j = 0; j < segments; j++) {
-        const a = map.get(`${i}-${j}`);
-        const b = map.get(`${i + 1}-${j}`);
-        const c = map.get(`${i}-${j + 1}`);
-        const d = map.get(`${i + 1}-${j + 1}`);
+        const a = vertexIndexMap.get(`${i}-${j}`);
+        const b = vertexIndexMap.get(`${i + 1}-${j}`);
+        const c = vertexIndexMap.get(`${i}-${j + 1}`);
+        const d = vertexIndexMap.get(`${i + 1}-${j + 1}`);
 
-        // Ensure indices exist and add triangles
-        if (a !== undefined && b !== undefined && c !== undefined) {
-          indices.push(a, b, c);
-        }
-        if (b !== undefined && c !== undefined && d !== undefined) {
-          indices.push(b, d, c);
-        }
+        if (a !== undefined && b !== undefined && c !== undefined) indices.push(a, b, c);
+        if (b !== undefined && c !== undefined && d !== undefined) indices.push(b, d, c);
       }
     }
 
-    // Create and populate the BufferGeometry
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(vertices, 3)
-    );
-    geometry.setAttribute(
-      "uv",
-      new THREE.Float32BufferAttribute(uvs, 2) // Set UVs for texture mapping
-    );
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals(); // Ensure smooth shading
-    return geometry;
+    // Create BufferGeometry and assign attributes
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    this.geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    this.geometry.setIndex(indices);
+    this.geometry.computeVertexNormals();  // Smooth shading
   }
 
   /**
-   * Apply plane-like noise to the circular geometry.
+   * Apply noise to the Y-coordinates of vertices.
    */
-  private applyNoise(): void {
+  public applyNoise(): void {
     const positions = this.geometry.attributes.position as THREE.BufferAttribute;
     const { radius, noiseFunction, heightFactor } = this.params;
 
-    // Apply noise to the Z-coordinate of each vertex
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
-      const y = positions.getY(i);
+      const z = positions.getZ(i);  // Use Z instead of Y
 
-      // Treat (x, y) as Cartesian coordinates
       const nx = (x + radius) / (2 * radius);
-      const ny = (y + radius) / (2 * radius);
+      const nz = (z + radius) / (2 * radius);
 
-      // Apply noise to the z-coordinate
-      const noiseValue = noiseFunction(nx, ny) * heightFactor;
-      positions.setZ(i, noiseValue);
+      const noiseValue = noiseFunction(nx, nz) * heightFactor;
+      positions.setY(i, noiseValue);  // Apply noise to Y-axis for height
     }
 
     positions.needsUpdate = true;
-    this.geometry.computeVertexNormals(); // Smooth the shading
+    this.geometry.computeVertexNormals();  // Recompute normals
   }
 
   /**
-   * Rotate the plane to align with the XZ plane.
+   * Set a new radius and rebuild the geometry.
    */
-  private rotateToXZPlane(): void {
-    this.geometry.rotateX(-Math.PI / 2); // Align to XZ plane
+  public setRadius(newRadius: number): void {
+    this.params.radius = newRadius;
+    this.createGeometry();
+    this.initializeGeometry();  // Reinitialize after geometry change
   }
 
   /**
-   * Translate the plane to its given position.
+   * Set a new height factor and reapply noise.
    */
-  private positionPlane(): void {
-    const [x, y, z] = this.params.position;
-    this.geometry.translate(x, y, z); // Position the plane in the scene
-  }
-
-  /**
-   * Return the generated geometry.
-   */
-  public getGeometry(): THREE.BufferGeometry {
-    return this.geometry;
+  public setHeightFactor(newHeightFactor: number): void {
+    this.params.heightFactor = newHeightFactor;
+    this.applyNoise();  // Reapply noise with the new height factor
   }
 }

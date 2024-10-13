@@ -1,29 +1,16 @@
-import { Entity } from "../../../parentClasses/Entity";
-import { MeshComponent } from "../../components/MeshComponent";
 import * as THREE from "three";
-import { IrregularGeometry, IrregularGeometryParams } from "../geometries/custom/IrregularGeometry";
+import { BaseTerrain, BasinParams } from "./BaseTerrain";
+import { IrregularPlaneGeometry, IrregularPlaneGeometryParams } from "../geometries/custom/IrregularPlaneGeometry";
 
 export interface IrregularRectangularTerrainParams {
-    terrainGeometry: IrregularGeometryParams
-    terrainMaterial: THREE.Material
+    terrainMaterial: THREE.Material;
+    terrainGeometry: IrregularPlaneGeometryParams;
+    basins?: BasinParams[];
 }
 
-export class IrregularRectangularTerrain extends Entity {
-
-    private geometry: IrregularGeometry;
-    private meshComponent: MeshComponent;
-
-    constructor(irregularTerrainParams: IrregularRectangularTerrainParams) {
-        super()
-        this.geometry = new IrregularGeometry(irregularTerrainParams.terrainGeometry);
-        this.meshComponent = new MeshComponent(this.geometry.getGeometry(), irregularTerrainParams.terrainMaterial);
-        this.addComponent(this.meshComponent);
+export class IrregularRectangularTerrain extends BaseTerrain {
+    constructor(params: IrregularRectangularTerrainParams) {
+        const geometry = new IrregularPlaneGeometry(params.terrainGeometry);
+        super(geometry, params.terrainMaterial, params.basins || []);
     }
-
-    // Method to get the THREE.Object3D associated with this entity
-    public getObject3D(): THREE.Object3D | null {
-        const meshComponent = this.getComponent(MeshComponent);
-        return meshComponent ? meshComponent.getMesh() : null;
-    }
-
 }

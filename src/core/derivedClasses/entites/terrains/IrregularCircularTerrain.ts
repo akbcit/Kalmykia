@@ -1,32 +1,37 @@
-import { Entity } from "../../../parentClasses/Entity";
-import { MeshComponent } from "../../components/MeshComponent";
-import * as THREE from "three";
-import { IrregularCircularGeometry, IrregularCircularGeometryParams } from "../geometries/custom/IrregularCircularGeometry";
+import { BaseTerrain, BasinParams } from './BaseTerrain';
+import { IrregularCircularGeometry, IrregularCircularGeometryParams } from '../geometries/custom/IrregularCircularGeometry';
+import * as THREE from 'three';
 
 export interface IrregularCircularTerrainParams {
-    terrainGeometry: IrregularCircularGeometryParams;
     terrainMaterial: THREE.Material;
+    terrainGeometry: IrregularCircularGeometryParams;
+    basins?: BasinParams[];
 }
 
-export class IrregularCircularTerrain extends Entity {
+export class IrregularCircularTerrain extends BaseTerrain {
+    private circularGeometry: IrregularCircularGeometry;
 
-    private geometry: IrregularCircularGeometry;
-    private meshComponent: MeshComponent;
-
-    constructor(irregularTerrainParams: IrregularCircularTerrainParams) {
-        super();
-        
-        // Create circular geometry with noise and terrain material
-        this.geometry = new IrregularCircularGeometry(irregularTerrainParams.terrainGeometry);
-        this.meshComponent = new MeshComponent(this.geometry.getGeometry(), irregularTerrainParams.terrainMaterial);
-
-        // Add the mesh component to the entity
-        this.addComponent(this.meshComponent);
+    constructor(params: IrregularCircularTerrainParams) {
+        const geometry = new IrregularCircularGeometry(params.terrainGeometry);
+        super(geometry, params.terrainMaterial, params.basins || []);
+        this.circularGeometry = geometry;
     }
 
-    // Method to get the THREE.Object3D associated with this entity
-    public getObject3D(): THREE.Object3D | null {
-        const meshComponent = this.getComponent(MeshComponent);
-        return meshComponent ? meshComponent.getMesh() : null;
+    /**
+     * Update the radius of the circular terrain.
+     * Recreates the geometry with the new radius and rebuilds the terrain.
+     */
+    public updateRadius(newRadius: number): void {
+        this.circularGeometry.setRadius(newRadius); // Update radius at geometry level
+        this.updateTerrain(); // Rebuild terrain with the new radius
+    }
+
+    /**
+     * Update the height factor for the terrain noise.
+     * Adjusts the height scaling and rebuilds the terrain.
+     */
+    public updateHeightFactor(newHeightFactor: number): void {
+        this.circularGeometry.updateParams({ heightFactor: newHeightFactor });
+        this.updateTerrain(); // Rebuild terrain with updated height factor
     }
 }

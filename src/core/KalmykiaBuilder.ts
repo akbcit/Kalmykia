@@ -10,7 +10,9 @@ import { Entity } from './parentClasses/Entity';
 import { GameObject } from './derivedClasses/entites/GameObject';
 import { LightOptions } from './derivedClasses/components/light/LightOptions';
 import { LightFactory } from './derivedClasses/components/light/LightFactory';
-import { Terrain } from './derivedClasses/entites/terrains/Terrain';
+import { BaseTerrain } from './derivedClasses/entites/terrains/BaseTerrain';
+import { IrregularCircularGeometry } from './derivedClasses/entites/geometries/custom/IrregularCircularGeometry';
+import { IrregularPlaneGeometry } from './derivedClasses/entites/geometries/custom/IrregularPlaneGeometry';
 
 export class KalmykiaBuilder {
     private engine: Kalmykia;
@@ -96,7 +98,7 @@ export class KalmykiaBuilder {
         return this;
     }
 
-    addTerrain(terrain: Terrain): KalmykiaBuilder {
+    addTerrain(terrain: BaseTerrain): KalmykiaBuilder {
         if (this.scene) {
             this.scene.addEntity(terrain);
         }
