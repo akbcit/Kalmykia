@@ -4,14 +4,14 @@ import { PartialGeometry, PartialGeometryParams } from "./PartialGeometry";
 
 export interface BaseIrregularGeometryParams {
   position?: [number, number, number];
-  noiseFunction: NoiseFunction;
+  noiseFunction?: NoiseFunction; // Optional noise function
   heightFactor?: number;
   baseHeight?: number;
 }
 
 export abstract class BaseIrregularGeometry {
   protected geometry: THREE.BufferGeometry = new THREE.BufferGeometry(); // Initialize with empty geometry
-  params: Required<BaseIrregularGeometryParams>;
+  params: Required<Omit<BaseIrregularGeometryParams, 'noiseFunction'>> & { noiseFunction?: NoiseFunction };
   protected initialHeights: Float32Array | null = null;
 
   constructor(params: BaseIrregularGeometryParams) {
@@ -44,7 +44,7 @@ export abstract class BaseIrregularGeometry {
   }
 
   /**
-   * Apply noise to the geometry's vertices.
+   * Apply noise to the geometry's vertices if a noise function is available.
    */
   public applyNoise(): void {
     const positions = this.geometry.attributes.position as THREE.BufferAttribute;
@@ -54,7 +54,7 @@ export abstract class BaseIrregularGeometry {
       const x = positions.getX(i);
       const y = positions.getY(i);
 
-      const noiseValue = noiseFunction(x, y) * heightFactor;
+      const noiseValue = noiseFunction ? noiseFunction(x, y) * heightFactor : 0;
       positions.setY(i, baseHeight + noiseValue); // Set new height
     }
 
@@ -65,7 +65,7 @@ export abstract class BaseIrregularGeometry {
   /**
    * Set a new noise function and reapply it to the geometry.
    */
-  public setNoiseFunction(newNoiseFunction: NoiseFunction): void {
+  public setNoiseFunction(newNoiseFunction?: NoiseFunction): void {
     this.params.noiseFunction = newNoiseFunction;
     this.applyNoise();
   }
@@ -109,8 +109,8 @@ export abstract class BaseIrregularGeometry {
   }
 
   /**
- * Dispose of the geometry to free GPU resources.
- */
+   * Dispose of the geometry to free GPU resources.
+   */
   public disposeGeometry(): void {
     this.geometry.dispose(); // Free GPU resources
 
@@ -129,5 +129,4 @@ export abstract class BaseIrregularGeometry {
     const partialGeometry = new PartialGeometry(geometry, params);
     return partialGeometry;
   }
-
 }

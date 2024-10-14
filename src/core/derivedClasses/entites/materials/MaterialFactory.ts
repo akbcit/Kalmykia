@@ -239,37 +239,6 @@ export class MaterialFactory {
         });
     }
 
-
-    public createMossyTerrainMaterial(): THREE.MeshStandardMaterial {
-        // Load each texture map with their respective paths
-        const colorTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Color.jpg');
-        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_AmbientOcclusion.jpg');
-        const displacementTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Displacement.jpg');
-        const normalTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_NormalGL.jpg'); // Use NormalGL for Three.js
-        const roughnessTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Roughness.jpg');
-
-        // Ensure textures are set to repeat and wrap correctly for large terrains
-        [colorTexture, ambientOcclusionTexture, displacementTexture, normalTexture, roughnessTexture].forEach((texture) => {
-            if (texture) {
-                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(10, 10); // Repeat the texture for large terrains
-            }
-        });
-
-        // Create and return the material with all texture maps applied
-        return new THREE.MeshStandardMaterial({
-            map: colorTexture,                          // Base color map
-            aoMap: ambientOcclusionTexture,             // Ambient Occlusion map
-            displacementMap: displacementTexture,       // Displacement map for surface detail
-            displacementScale: 0.1,                     // Scale of displacement, adjust as needed
-            normalMap: normalTexture,                   // Normal map for surface details
-            roughnessMap: roughnessTexture,             // Roughness map for material roughness
-            roughness: 1,                               // Base roughness value (no shininess)
-            metalness: 0,                               // No metalness for a natural, non-metallic surface
-            side: THREE.DoubleSide,                     // Render on both sides
-        });
-    }
-
     public createNonShinyMossMaterial(): THREE.MeshLambertMaterial {
         const colorTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Color.jpg');
         if (colorTexture) {
@@ -282,11 +251,44 @@ export class MaterialFactory {
             side: THREE.DoubleSide, // Render on both sides
         });
     }
+
+    public createMossyRockMaterial(): THREE.MeshStandardMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/mossyRock/Rock057_1K-JPG_Color.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/mossyRock/Rock057_1K-JPG_NormalGL.jpg');
+        const roughnessTexture = this.loadTexture('src/assets/textures/mossyRock/Rock057_1K-JPG_Roughness.jpg');
+        const aoTexture = this.loadTexture('src/assets/textures/mossyRock/Rock057_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/mossyRock/Rock057_1K-JPG_Displacement.jpg');
+
+        // Ensure textures are set to repeat and wrapped properly
+        [colorTexture, normalTexture, roughnessTexture, aoTexture, displacementTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(5, 5); // Adjust repetition
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+            }
+        });
+
+        // Create and return the material with the textures applied
+        const material = new THREE.MeshStandardMaterial({
+            map: colorTexture,
+            normalMap: normalTexture,
+            displacementScale: 0.02, // Subtle displacement
+            roughness: 0.8,
+            metalness: 0.2, // Slight metallic shine
+            side: THREE.FrontSide, // Avoid double-side rendering issues
+            transparent: false, // Disable transparency for proper Z-buffer handling
+        });
+
+        return material;
+    }
+
+
     public createWetMudMaterial(): THREE.MeshStandardMaterial {
         const colorTexture = this.loadTexture('src/assets/textures/mud/ground_0005_basecolor_1k.jpg');
         const normalTexture = this.loadTexture('src/assets/textures/mud/ground_0005_normal_1k.png');
         const roughnessTexture = this.loadTexture('src/assets/textures/mud/ground_0005_roughness_1k.jpg');
-    
+
         // Ensure all textures are set to repeat and wrap correctly
         [colorTexture, normalTexture, roughnessTexture].forEach((texture) => {
             if (texture) {
@@ -294,7 +296,7 @@ export class MaterialFactory {
                 texture.repeat.set(10, 10); // Adjust repetition
             }
         });
-    
+
         // Create and return the material with the textures applied
         const material = new THREE.MeshStandardMaterial({
             map: colorTexture,
@@ -306,64 +308,132 @@ export class MaterialFactory {
             transparent: true, // Allow transparency to debug
             opacity: 1.0, // Ensure it is fully visible
         });
-    
+
         return material;
     }
 
     public createTrunkMaterial(params?: TrunkMaterialParams): THREE.MeshStandardMaterial {
         const materialParams: THREE.MeshStandardMaterialParameters = {
-          color: params?.color || 0x8B4513,   // Default brown color for trunk
-          roughness: params?.roughness ?? 0.8,
-          metalness: params?.metalness ?? 0,
+            color: params?.color || 0x8B4513,   // Default brown color for trunk
+            roughness: params?.roughness ?? 0.8,
+            metalness: params?.metalness ?? 0,
         };
-    
+
         // Apply bark texture if path is provided
         if (params?.barkTexturePath) {
-          materialParams.map = this.textureLoader.load(params.barkTexturePath);
+            materialParams.map = this.textureLoader.load(params.barkTexturePath);
         }
-    
+
         // Create and return the material
         return new THREE.MeshStandardMaterial(materialParams);
-      }
-    
-      /**
-       * Creates a material for branches using the specified BranchMaterialParams.
-       */
-      public createBranchMaterial(params?: BranchMaterialParams): THREE.MeshStandardMaterial {
+    }
+
+    /**
+     * Creates a material for branches using the specified BranchMaterialParams.
+     */
+    public createBranchMaterial(params?: BranchMaterialParams): THREE.MeshStandardMaterial {
         const materialParams: THREE.MeshStandardMaterialParameters = {
-          color: params?.color || 0x8B4513,   // Default brown color for branches
-          roughness: params?.roughness ?? 0.6,
-          metalness: params?.metalness ?? 0,
+            color: params?.color || 0x8B4513,   // Default brown color for branches
+            roughness: params?.roughness ?? 0.6,
+            metalness: params?.metalness ?? 0,
         };
-    
+
         // Apply branch texture if path is provided
         if (params?.branchTexturePath) {
-          materialParams.map = this.textureLoader.load(params.branchTexturePath);
+            materialParams.map = this.textureLoader.load(params.branchTexturePath);
         }
-    
+
         // Create and return the material
         return new THREE.MeshStandardMaterial(materialParams);
-      }
-    
-      /**
-       * Creates a material for leaves using the specified LeafMaterialParams.
-       */
-      public createLeafMaterial(params?: LeafMaterialParams): THREE.MeshStandardMaterial {
+    }
+
+    /**
+     * Creates a material for leaves using the specified LeafMaterialParams.
+     */
+    public createLeafMaterial(params?: LeafMaterialParams): THREE.MeshStandardMaterial {
         const materialParams: THREE.MeshStandardMaterialParameters = {
-          color: params?.color || 0x228B22,  // Default green color for leaves
-          roughness: params?.roughness ?? 0.5,
-          metalness: params?.metalness ?? 0,
-          opacity: params?.transparency ?? 1,
-          transparent: params?.transparency !== undefined ? true : false,
+            color: params?.color || 0x228B22,  // Default green color for leaves
+            roughness: params?.roughness ?? 0.5,
+            metalness: params?.metalness ?? 0,
+            opacity: params?.transparency ?? 1,
+            transparent: params?.transparency !== undefined ? true : false,
         };
-    
+
         // Apply leaf texture if path is provided
         if (params?.leafTexturePath) {
-          materialParams.map = this.textureLoader.load(params.leafTexturePath);
+            materialParams.map = this.textureLoader.load(params.leafTexturePath);
         }
-    
+
         // Create and return the material
         return new THREE.MeshStandardMaterial(materialParams);
-      }
+    }
+
+    public createMossyTerrainMaterial(): THREE.MeshStandardMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Color.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_NormalGL.jpg');
+        const roughnessTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Roughness.jpg');
+        const aoTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/moss/Moss002_1K-JPG_Displacement.jpg');
+
+        // Ensure textures are configured to repeat and wrapped properly
+        [colorTexture, normalTexture, roughnessTexture, aoTexture, displacementTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(2, 2); // Adjust repetition for large terrain
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+            }
+        });
+
+        // Create and return the material with the textures applied
+        const material = new THREE.MeshStandardMaterial({
+            map: colorTexture,                    // Base color map
+            normalMap: normalTexture,             // Normal map for surface details
+            roughnessMap: roughnessTexture,       // Roughness map for material roughness
+            aoMap: aoTexture,                     // Ambient Occlusion map
+            displacementScale: 0.2,               // Adjust scale for displacement effect
+            roughness: 1,                         // No shininess, natural surface
+            metalness: 0,                         // Non-metallic surface
+            side: THREE.FrontSide,               // Render on both sides
+            transparent: false,                   // Disable transparency to avoid Z-buffer issues
+        });
+
+        return material;
+    }
+
+    public createSnowMaterial(): THREE.MeshStandardMaterial {
+
+        const colorTexture = this.loadTexture('src/assets/textures/snow/Snow010A_1K-JPG_Color.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/snow/Snow010A_1K-JPG_NormalGL.jpg');
+        const roughnessTexture = this.loadTexture('src/assets/textures/snow/Snow010A_1K-JPG_Roughness.jpg');
+        const aoTexture = this.loadTexture('src/assets/textures/snow/Snow010A_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/snow/Snow010A_1K-JPG_Displacement.jpg');
+
+        // Ensure textures are configured to repeat and wrapped properly
+        [colorTexture, normalTexture, roughnessTexture, aoTexture, displacementTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(2, 2); // Adjust repetition for large terrain
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+            }
+        });
+
+        // Create and return the material with the textures applied
+        const material = new THREE.MeshStandardMaterial({
+            map: colorTexture,                    // Base color map
+            normalMap: normalTexture,             // Normal map for surface details
+            roughnessMap: roughnessTexture,       // Roughness map for material roughness
+            aoMap: aoTexture,                     // Ambient Occlusion map
+            displacementScale: 0.2,               // Adjust scale for displacement effect
+            roughness: 1,                         // No shininess, natural surface
+            metalness: 0,                         // Non-metallic surface
+            side: THREE.FrontSide,               // Render on both sides
+            transparent: false,                   // Disable transparency to avoid Z-buffer issues
+        });
+
+        return material;
+    }
+
 
 }

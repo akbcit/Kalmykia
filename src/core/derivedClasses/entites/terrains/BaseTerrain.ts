@@ -134,12 +134,19 @@ export abstract class BaseTerrain extends Entity {
         return this.geometry.createPartialGeometry(params);
     }
 
-      // Update an existing basin
-      public updateBasin(index: number, updatedParams: Partial<BasinParams>): void {
+    // Update an existing basin
+    public updateBasin(index: number, updatedParams: Partial<BasinParams>): void {
         if (index >= 0 && index < this.basins.length) {
             Object.assign(this.basins[index], updatedParams);
             this.applyBasins();
             this.rebuildTerrain();
         }
+    }
+
+    // Update terrain after changing geometry parameters
+    public updateTerrain(): void {
+        this.geometry.applyNoise();
+        this.applyBasins();
+        this.rebuildTerrain();
     }
 }

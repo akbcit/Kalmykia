@@ -8,7 +8,7 @@ export interface IrregularCircularGeometryParams extends BaseIrregularGeometryPa
 }
 
 export class IrregularCircularGeometry extends BaseIrregularGeometry {
-  params: Required<IrregularCircularGeometryParams>;
+  params: Required<Omit<IrregularCircularGeometryParams, 'noiseFunction'>> & { noiseFunction?: NoiseFunction };
 
   constructor(params: IrregularCircularGeometryParams) {
     super(params);
@@ -29,8 +29,8 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
    * Create the circular geometry with UV mapping on the XZ plane.
    */
   protected createGeometry(): void {
-    this.disposeGeometry();  // Dispose old geometry
-
+    this.disposeGeometry(); // Dispose old geometry
+  
     const { radius, segments } = this.params;
     const vertices: number[] = [];
     const uvs: number[] = [];
@@ -38,53 +38,56 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
     const vertexIndexMap: Map<string, number> = new Map();
     const step = (2 * radius) / segments;
     let index = 0;
-
-    // Generate vertices on the XZ plane 
+  
+    // Generate vertices on the XZ plane
     for (let i = 0; i <= segments; i++) {
       for (let j = 0; j <= segments; j++) {
         const x = -radius + i * step;
-        const z = -radius + j * step;  
-
+        const z = -radius + j * step;
+  
         if (x * x + z * z <= radius * radius) {
-          vertices.push(x, 0, z);  // Use (x, 0, z) for XZ alignment
-
+          vertices.push(x, 0, z); // Use (x, 0, z) for XZ alignment
+  
           // UV mapping for texture coordinates
           const u = (x + radius) / (2 * radius);
-          const v = (z + radius) / (2 * radius);  // Z-axis for UVs
+          const v = (z + radius) / (2 * radius); // Z-axis for UVs
           uvs.push(u, v);
-
+  
           vertexIndexMap.set(`${i}-${j}`, index++);
         }
       }
     }
-
-    // Generate triangle indices
+  
+    // Generate triangle indices with correct winding order (CCW)
     for (let i = 0; i < segments; i++) {
       for (let j = 0; j < segments; j++) {
         const a = vertexIndexMap.get(`${i}-${j}`);
         const b = vertexIndexMap.get(`${i + 1}-${j}`);
         const c = vertexIndexMap.get(`${i}-${j + 1}`);
         const d = vertexIndexMap.get(`${i + 1}-${j + 1}`);
-
-        if (a !== undefined && b !== undefined && c !== undefined) indices.push(a, b, c);
-        if (b !== undefined && c !== undefined && d !== undefined) indices.push(b, d, c);
+  
+        // Ensure the triangles are defined in counter-clockwise (CCW) order
+        if (a !== undefined && b !== undefined && c !== undefined) indices.push(a, c, b);
+        if (b !== undefined && c !== undefined && d !== undefined) indices.push(b, c, d);
       }
     }
-
+  
     // Create BufferGeometry and assign attributes
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
     this.geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
     this.geometry.setIndex(indices);
-    this.geometry.computeVertexNormals();  // Smooth shading
+    this.geometry.computeVertexNormals(); // Smooth shading
   }
 
   /**
-   * Apply noise to the Y-coordinates of vertices.
+   * Apply noise to the Y-coordinates of vertices, if available.
    */
   public applyNoise(): void {
     const positions = this.geometry.attributes.position as THREE.BufferAttribute;
     const { radius, noiseFunction, heightFactor } = this.params;
+
+    if (!noiseFunction) return;  // Skip if no noise function
 
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
@@ -111,7 +114,7 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
   }
 
   /**
-   * Set a new height factor and reapply noise.
+   * Set a new height factor and reapply noise, if available.
    */
   public setHeightFactor(newHeightFactor: number): void {
     this.params.heightFactor = newHeightFactor;

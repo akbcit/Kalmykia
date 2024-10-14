@@ -33,8 +33,12 @@ export class RenderSystem {
             // Check for PositionComponent and MeshComponent to update mesh position
             if (position instanceof PositionComponent && meshComponent instanceof MeshComponent) {
                 // Update mesh position based on PositionComponent
-                meshComponent.mesh.position.set(position.x, position.y, position.z);
-
+                meshComponent.mesh.position.set(
+                    position.position.x, // Access x via position
+                    position.position.y, // Access y via position
+                    position.position.z  // Access z via position
+                );
+            
                 // Add mesh to the scene if not already present
                 if (!this.scene.getScene().children.includes(meshComponent.mesh)) {
                     this.scene.getScene().add(meshComponent.mesh);
