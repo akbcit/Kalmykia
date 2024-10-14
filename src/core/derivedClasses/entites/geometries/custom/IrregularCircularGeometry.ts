@@ -21,8 +21,8 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
       baseHeight: params.baseHeight || 0,
     };
 
-    this.createGeometry();   
-    this.initializeGeometry();   
+    this.createGeometry();
+    this.initializeGeometry();
   }
 
   /**
@@ -43,7 +43,7 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
     for (let i = 0; i <= segments; i++) {
       for (let j = 0; j <= segments; j++) {
         const x = -radius + i * step;
-        const z = -radius + j * step;  
+        const z = -radius + j * step;
 
         if (x * x + z * z <= radius * radius) {
           vertices.push(x, 0, z);  // Use (x, 0, z) for XZ alignment
@@ -66,8 +66,8 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
         const c = vertexIndexMap.get(`${i}-${j + 1}`);
         const d = vertexIndexMap.get(`${i + 1}-${j + 1}`);
 
-        if (a !== undefined && b !== undefined && c !== undefined) indices.push(a, b, c);
-        if (b !== undefined && c !== undefined && d !== undefined) indices.push(b, d, c);
+        if (a !== undefined && b !== undefined && c !== undefined) indices.push(a, c, b);
+        if (b !== undefined && c !== undefined && d !== undefined) indices.push(b, c, d);
       }
     }
 

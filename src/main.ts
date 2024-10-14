@@ -72,8 +72,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Define material patches
   const materialPatches: MaterialPatchParams[] = [
-    { center: new THREE.Vector2(20, 20), radius: 10, material: patchMaterial },
-    { center: new THREE.Vector2(-10, -10), radius: 8, material: patchMaterial },
+    { center: new THREE.Vector2(0, 0), radius: 20, material: patchMaterial },
   ];
 
   // Add patches to the terrain

@@ -75,6 +75,14 @@ export abstract class BaseTerrain extends Entity {
         this.geometry.getGeometry().computeVertexNormals();
     }
 
+    // Update terrain after changing geometry parameters
+    public updateTerrain(): void {
+        this.geometry.applyNoise();
+        this.applyBasins();
+        this.rebuildTerrain();
+    }
+
+
     // Calculate the basin effects based on distance and falloff
     protected applyBasinEffects(x: number, z: number, baseHeight: number): number {
         let height = baseHeight;
@@ -134,8 +142,8 @@ export abstract class BaseTerrain extends Entity {
         return this.geometry.createPartialGeometry(params);
     }
 
-      // Update an existing basin
-      public updateBasin(index: number, updatedParams: Partial<BasinParams>): void {
+    // Update an existing basin
+    public updateBasin(index: number, updatedParams: Partial<BasinParams>): void {
         if (index >= 0 && index < this.basins.length) {
             Object.assign(this.basins[index], updatedParams);
             this.applyBasins();
