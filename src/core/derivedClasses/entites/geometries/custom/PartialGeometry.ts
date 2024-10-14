@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createNoise2D } from 'simplex-noise'; // Import Simplex noise
 
 export interface PartialGeometryParams {
-  center: THREE.Vector2;         // Center position in the XZ plane
+  center: [number, number];      // Tuple representing the XZ coordinates
   radius: number;                // Radius to include vertices
   edgeSmoothing?: boolean;       // Enable edge smoothing
   noiseIntensity?: number;       // Intensity of noise perturbation
@@ -21,8 +21,8 @@ export class PartialGeometry extends THREE.BufferGeometry {
       smoothingRadius = 0.2,
     } = params;
 
-    // Convert 2D center to 3D vector for calculations
-    const center3D = new THREE.Vector3(center.x, 0, center.y);
+    // Convert the tuple to a THREE.Vector3 with Y = 0
+    const center3D = new THREE.Vector3(center[0], 0, center[1]);
 
     // Clip the geometry and smooth edges if needed
     const clippedGeometry = this.clipAndSmoothGeometry(

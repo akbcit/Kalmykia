@@ -21,8 +21,8 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
       baseHeight: params.baseHeight || 0,
     };
 
-    this.createGeometry();  // Step 1: Create the geometry
-    this.initializeGeometry();  // Step 2: Initialize (store heights and apply noise)
+    this.createGeometry();   
+    this.initializeGeometry();   
   }
 
   /**
@@ -39,11 +39,11 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
     const step = (2 * radius) / segments;
     let index = 0;
 
-    // Generate vertices on the XZ plane instead of the XY plane
+    // Generate vertices on the XZ plane 
     for (let i = 0; i <= segments; i++) {
       for (let j = 0; j <= segments; j++) {
         const x = -radius + i * step;
-        const z = -radius + j * step;  // Use Z-axis instead of Y
+        const z = -radius + j * step;  
 
         if (x * x + z * z <= radius * radius) {
           vertices.push(x, 0, z);  // Use (x, 0, z) for XZ alignment

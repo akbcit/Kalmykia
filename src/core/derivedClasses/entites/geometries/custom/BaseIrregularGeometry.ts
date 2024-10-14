@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { NoiseFunction } from "../../../../../utils/noise/types/NoiseFunction";
+import { PartialGeometry, PartialGeometryParams } from "./PartialGeometry";
 
 export interface BaseIrregularGeometryParams {
   position?: [number, number, number];
@@ -121,6 +122,12 @@ export abstract class BaseIrregularGeometry {
         attribute.needsUpdate = true;
       }
     }
-
   }
+
+  public createPartialGeometry(params: PartialGeometryParams) {
+    const geometry = this.getGeometry();
+    const partialGeometry = new PartialGeometry(geometry, params);
+    return partialGeometry;
+  }
+
 }

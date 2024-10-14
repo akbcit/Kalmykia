@@ -10,7 +10,9 @@ import { GLTFEntity } from './core/derivedClasses/entites/gtlf/GTLFEntity';
 import { TreeEntity } from './core/derivedClasses/entites/trees/TreeEntity';
 import { getDefaultTreeParams } from './core/derivedClasses/entites/trees/types/TreeParams';
 import { IrregularCircularTerrain, IrregularCircularTerrainParams } from './core/derivedClasses/entites/terrains/IrregularCircularTerrain';
-import { BasinParams } from './core/derivedClasses/entites/terrains/BaseTerrain';
+import { BasinParams, MaterialPatchParams } from './core/derivedClasses/entites/terrains/BaseTerrain';
+import { Entity } from './core/parentClasses/Entity';
+import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 
 // Initialize material factory and materials
 const materialFactory = new MaterialFactory();
@@ -56,7 +58,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const circularTerrainParams: IrregularCircularTerrainParams = {
     terrainGeometry: {
       radius: 100,
-      segments: 100,
+      segments: 200,
       noiseFunction: softHillNoiseFunction,
       heightFactor: 10,
       position: [0, 0, 0],
@@ -66,6 +68,27 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   const circularTerrain = new IrregularCircularTerrain(circularTerrainParams);
+  const patchMaterial = materialFactory.createWetMudMaterial()
+
+  // Define material patches
+  const materialPatches: MaterialPatchParams[] = [
+    { center: new THREE.Vector2(20, 20), radius: 10, material: patchMaterial },
+    { center: new THREE.Vector2(-10, -10), radius: 8, material: patchMaterial },
+  ];
+
+  // Add patches to the terrain
+  materialPatches.forEach((patch) => {
+    const partialGeometry = circularTerrain.getPartialGeometry({
+      center: [patch.center.x, patch.center.y],
+      radius: patch.radius,
+    });
+
+    const patchMesh = new THREE.Mesh(partialGeometry, patch.material);
+    patchMesh.position.y += 0.01; // Slight offset to prevent Z-fighting
+    circularTerrain.meshComponent.getMesh().add(patchMesh); // Add patch to the terrain mesh
+  });
+
+
   waterEntity.setPosition(0, 1, 0);
 
   // Create Tree

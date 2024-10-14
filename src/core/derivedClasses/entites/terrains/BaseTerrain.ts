@@ -2,6 +2,7 @@ import { Entity } from "../../../parentClasses/Entity";
 import { MeshComponent } from "../../components/MeshComponent";
 import * as THREE from "three";
 import { BaseIrregularGeometry, BaseIrregularGeometryParams } from "../geometries/custom/BaseIrregularGeometry";
+import { PartialGeometryParams } from "../geometries/custom/PartialGeometry";
 
 export interface BasinParams {
     position: THREE.Vector2;
@@ -10,27 +11,41 @@ export interface BasinParams {
     falloff?: "linear" | "smooth";
 }
 
+export interface MaterialPatchParams {
+    center: THREE.Vector2;
+    radius: number;
+    material: THREE.Material;
+}
+
 export abstract class BaseTerrain extends Entity {
     protected geometry: BaseIrregularGeometry;
-    protected meshComponent: MeshComponent;
+    public meshComponent: MeshComponent;
     protected basins: BasinParams[] = [];
+    protected materialPatches: MaterialPatchParams[] = [];
     protected initialHeights: Float32Array | null = null;
+    protected mesh: THREE.Mesh | null = null;
 
     constructor(
         geometry: BaseIrregularGeometry,
         material: THREE.Material,
-        basins: BasinParams[] = []
+        basins: BasinParams[] = [],
+        materialPatches: MaterialPatchParams[] = []
     ) {
         super();
         this.geometry = geometry;
         this.basins = basins;
+        this.materialPatches = materialPatches;
 
         // Initialize the mesh component
         this.meshComponent = new MeshComponent(this.geometry.getGeometry(), material);
+        this.meshComponent.getMesh().renderOrder = 0;
         this.addComponent(this.meshComponent);
+        this.mesh = this.meshComponent.getMesh();
 
+        // Store heights and apply terrain features
         this.storeInitialHeights();
         this.applyBasins();
+        this.addPatchMeshes(); // Add patch meshes to the scene
     }
 
     // Store initial Y-coordinates of the vertices
@@ -78,44 +93,53 @@ export abstract class BaseTerrain extends Entity {
         return height;
     }
 
-    // Add a new basin
-    public addBasin(basin: BasinParams): void {
-        this.basins.push(basin);
-        this.applyBasins();
-    }
+    // Add material patch meshes to the scene
+    public addPatchMeshes(): void {
+        for (const patch of this.materialPatches) {
+            const partialGeometry = this.getPartialGeometry({
+                center: [patch.center.x, patch.center.y],
+                radius: patch.radius,
+            });
 
-    // Clear all basins
-    public clearBasins(): void {
-        this.basins = [];
-        this.applyBasins();
-    }
+            // Create a mesh for the patch and slightly offset it to prevent Z-fighting
+            const patchMesh = new THREE.Mesh(partialGeometry, patch.material);
+            patchMesh.position.y += 0.01; // Slightly raise the patch mesh to avoid Z-fighting
 
-    // Update an existing basin
-    public updateBasin(index: number, updatedParams: Partial<BasinParams>): void {
-        if (index >= 0 && index < this.basins.length) {
-            Object.assign(this.basins[index], updatedParams);
-            this.applyBasins();
-            this.rebuildTerrain();
+            // Add the patch mesh to the terrain mesh
+            this.meshComponent.getMesh().add(patchMesh);
         }
     }
 
-    // Rebuild the terrain mesh and update the scene
+    // Add a new material patch
+    public addMaterialPatch(patch: MaterialPatchParams): void {
+        this.materialPatches.push(patch);
+        this.addPatchMeshes(); // Rebuild patches
+    }
+
+    // Clear all material patches
+    public clearMaterialPatches(): void {
+        this.materialPatches = [];
+        this.meshComponent.getMesh().clear(); // Clear all child meshes (patches)
+    }
+
+    // Rebuild the terrain mesh
     public rebuildTerrain(): void {
         this.meshComponent.updateMesh(this.geometry.getGeometry(), this.meshComponent.getMesh().material);
         this.meshComponent.getMesh().geometry.computeBoundingSphere();
         this.meshComponent.getMesh().updateMatrixWorld(true);
     }
 
-    // Update terrain after changing geometry parameters
-    public updateTerrain(): void {
-        this.geometry.applyNoise();
-        this.applyBasins();
-        this.rebuildTerrain();
+    // Get a partial geometry for a patch
+    public getPartialGeometry(params: PartialGeometryParams) {
+        return this.geometry.createPartialGeometry(params);
     }
 
-    // Expose method to update geometry parameters dynamically
-    public updateGeometryParams(params: Partial<BaseIrregularGeometryParams>): void {
-        Object.assign(this.geometry.params, params); // Merge new parameters
-        this.updateTerrain(); // Rebuild terrain with updated parameters
+      // Update an existing basin
+      public updateBasin(index: number, updatedParams: Partial<BasinParams>): void {
+        if (index >= 0 && index < this.basins.length) {
+            Object.assign(this.basins[index], updatedParams);
+            this.applyBasins();
+            this.rebuildTerrain();
+        }
     }
 }
