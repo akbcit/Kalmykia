@@ -1,12 +1,8 @@
 import * as THREE from 'three';
-import { createNoise2D } from 'simplex-noise'; // Import Simplex noise
 
 export interface PartialGeometryParams {
-  center: [number, number];      // Tuple representing the XZ coordinates
-  radius: number;                // Radius to include vertices
-  edgeSmoothing?: boolean;       // Enable edge smoothing
-  noiseIntensity?: number;       // Intensity of noise perturbation
-  smoothingRadius?: number;      // Radius over which to smooth edges
+  center: [number, number]; // Tuple representing the XZ coordinates
+  radius: number;           // Radius to include vertices
 }
 
 export class PartialGeometry extends THREE.BufferGeometry {
@@ -16,41 +12,35 @@ export class PartialGeometry extends THREE.BufferGeometry {
     const {
       center,
       radius,
-      edgeSmoothing = false,
-      noiseIntensity = 0.1,
-      smoothingRadius = 0.2,
     } = params;
 
     // Convert the tuple to a THREE.Vector3 with Y = 0
     const center3D = new THREE.Vector3(center[0], 0, center[1]);
 
-    // Clip the geometry and smooth edges if needed
-    const clippedGeometry = this.clipAndSmoothGeometry(
+    // Clip the geometry based on radius
+    let clippedGeometry = this.clipGeometry(
       originalGeometry,
       center3D,
       radius,
-      edgeSmoothing,
-      noiseIntensity,
-      smoothingRadius
     );
+
+    // Apply smoothing to the edge vertices
+    clippedGeometry = this.smoothEdgeVertices(clippedGeometry, center3D, radius);
 
     // Copy the resulting geometry into this instance
     this.copy(clippedGeometry);
   }
 
-  private clipAndSmoothGeometry(
+  private clipGeometry(
     originalGeometry: THREE.BufferGeometry,
     center: THREE.Vector3,
     radius: number,
-    edgeSmoothing: boolean,
-    noiseIntensity: number,
-    smoothingRadius: number
   ): THREE.BufferGeometry {
-    const geom = this.cloneOriginalGeometry(originalGeometry);
+    const geom = originalGeometry.clone();
     const { position, uv, index } = this.extractAttributes(geom);
 
     const { newPositions, newIndices, newUVs, vertexMap } = this.processVertices(
-      position, uv, center, radius, edgeSmoothing, noiseIntensity, smoothingRadius
+      position, uv, center, radius
     );
 
     if (newPositions.length === 0) {
@@ -60,10 +50,6 @@ export class PartialGeometry extends THREE.BufferGeometry {
 
     this.addTrianglesToBuffers(index, vertexMap, newIndices);
     return this.createGeometryFromBuffers(newPositions, newIndices, newUVs);
-  }
-
-  private cloneOriginalGeometry(originalGeometry: THREE.BufferGeometry): THREE.BufferGeometry {
-    return originalGeometry.clone();
   }
 
   private extractAttributes(geom: THREE.BufferGeometry) {
@@ -79,9 +65,6 @@ export class PartialGeometry extends THREE.BufferGeometry {
     uv: THREE.BufferAttribute | undefined,
     center: THREE.Vector3,
     radius: number,
-    edgeSmoothing: boolean,
-    noiseIntensity: number,
-    smoothingRadius: number
   ) {
     const newPositions: number[] = [];
     const newIndices: number[] = [];
@@ -89,7 +72,6 @@ export class PartialGeometry extends THREE.BufferGeometry {
     const vertexMap: Map<number, number> = new Map();
 
     let newIndex = 0;
-    const noise = createNoise2D();
 
     for (let i = 0; i < position.count; i++) {
       const vertex = new THREE.Vector3().fromBufferAttribute(position, i);
@@ -97,11 +79,8 @@ export class PartialGeometry extends THREE.BufferGeometry {
         new THREE.Vector2(center.x, center.z)
       );
 
+      // Only keep vertices within the specified radius
       if (distanceXZ <= radius) {
-        if (edgeSmoothing && distanceXZ >= radius - smoothingRadius) {
-          this.applyEdgeSmoothing(vertex, center, distanceXZ, radius, smoothingRadius);
-        }
-
         newPositions.push(vertex.x, vertex.y, vertex.z);
 
         if (uv) {
@@ -115,20 +94,6 @@ export class PartialGeometry extends THREE.BufferGeometry {
     }
 
     return { newPositions, newIndices, newUVs, vertexMap };
-  }
-
-  private applyEdgeSmoothing(
-    vertex: THREE.Vector3,
-    center: THREE.Vector3,
-    distanceXZ: number,
-    radius: number,
-    smoothingRadius: number,
-  ) {
-    const direction = new THREE.Vector3(vertex.x - center.x, 0, vertex.z - center.z).normalize();
-    const t = (radius - distanceXZ) / smoothingRadius;
-
-    vertex.lerp(center.clone().add(direction.multiplyScalar(radius)),t);
-
   }
 
   private createGeometryFromBuffers(
@@ -147,6 +112,33 @@ export class PartialGeometry extends THREE.BufferGeometry {
     newGeometry.computeVertexNormals(); // Recompute normals for smooth shading
 
     return newGeometry;
+  }
+
+  private smoothEdgeVertices(
+    geometry: THREE.BufferGeometry,
+    center: THREE.Vector3,
+    radius: number,
+    smoothFactor: number = 0.3 // Adjust as needed to control how much the edges are rounded
+  ): THREE.BufferGeometry {
+    const positions = geometry.attributes.position as THREE.BufferAttribute;
+
+    for (let i = 0; i < positions.count; i++) {
+      const vertex = new THREE.Vector3().fromBufferAttribute(positions, i);
+      const distanceXZ = new THREE.Vector2(vertex.x, vertex.z).distanceTo(
+        new THREE.Vector2(center.x, center.z)
+      );
+
+      // If the vertex is near the edge, smooth it by pulling it inward
+      if (distanceXZ >= radius - smoothFactor && distanceXZ <= radius) {
+        const direction = new THREE.Vector3(vertex.x - center.x, 0, vertex.z - center.z).normalize();
+        vertex.sub(direction.multiplyScalar(smoothFactor));
+        positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+      }
+    }
+
+    geometry.attributes.position.needsUpdate = true;
+    geometry.computeVertexNormals(); // Recompute normals for smooth shading
+    return geometry;
   }
 
   // Helper: Add triangles to buffers based on indices

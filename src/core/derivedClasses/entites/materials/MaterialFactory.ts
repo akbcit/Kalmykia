@@ -288,9 +288,10 @@ export class MaterialFactory {
         const colorTexture = this.loadTexture('src/assets/textures/mud/ground_0005_basecolor_1k.jpg');
         const normalTexture = this.loadTexture('src/assets/textures/mud/ground_0005_normal_1k.png');
         const roughnessTexture = this.loadTexture('src/assets/textures/mud/ground_0005_roughness_1k.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/mud/ground_0005_ambient_occlusion_1k.jpg'); // Optional
 
         // Ensure all textures are set to repeat and wrap correctly
-        [colorTexture, normalTexture, roughnessTexture].forEach((texture) => {
+        [colorTexture, normalTexture, roughnessTexture, ambientOcclusionTexture].forEach((texture) => {
             if (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(10, 10); // Adjust repetition
@@ -302,11 +303,12 @@ export class MaterialFactory {
             map: colorTexture,
             normalMap: normalTexture,
             roughnessMap: roughnessTexture,
-            roughness: 0.6,
-            metalness: 0.1, // Slight wet appearance
-            side: THREE.DoubleSide, // Render on both sides
-            transparent: true, // Allow transparency to debug
-            opacity: 1.0, // Ensure it is fully visible
+            aoMap: ambientOcclusionTexture, // Ambient occlusion to add depth
+            roughness: 0.5,
+            metalness: 0, // More reflective, simulating wetness
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.95, // Slight transparency can make the effect look subtle
         });
 
         return material;
@@ -327,6 +329,72 @@ export class MaterialFactory {
         // Create and return the material
         return new THREE.MeshStandardMaterial(materialParams);
     }
+
+    public createWetMudShaderMaterial(center: [number, number], radius: number): THREE.ShaderMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/mud/ground_0005_basecolor_1k.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/mud/ground_0005_normal_1k.png');
+        const roughnessTexture = this.loadTexture('src/assets/textures/mud/ground_0005_roughness_1k.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/mud/ground_0005_ambient_occlusion_1k.jpg'); // Optional
+
+        // Ensure all textures are set to repeat and wrap correctly
+        [colorTexture, normalTexture, roughnessTexture, ambientOcclusionTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(10, 10); // Adjust repetition
+            }
+        });
+
+        // Create the shader material
+        const shaderMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                colorMap: { value: colorTexture },
+                normalMap: { value: normalTexture },
+                roughnessMap: { value: roughnessTexture },
+                aoMap: { value: ambientOcclusionTexture },
+                center: { value: new THREE.Vector3(center[0], 0, center[1]) },
+                radius: { value: radius }
+            },
+            vertexShader: `
+                varying vec3 vPosition;
+                varying vec2 vUv;
+                void main() {
+                    vPosition = position;
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D colorMap;
+                uniform sampler2D normalMap;
+                uniform sampler2D roughnessMap;
+                uniform sampler2D aoMap;
+                uniform vec3 center;
+                uniform float radius;
+                varying vec3 vPosition;
+                varying vec2 vUv;
+                
+                void main() {
+                    float dist = distance(vPosition.xz, center.xz);
+                    float blendFactor = smoothstep(radius - 0.2, radius, dist); // Adjust 0.2 for sharpness
+    
+                    vec4 color = texture2D(colorMap, vUv);
+                    vec4 ao = texture2D(aoMap, vUv);
+                    vec4 roughness = texture2D(roughnessMap, vUv);
+                    vec4 normal = texture2D(normalMap, vUv);
+    
+                    // Apply blending based on distance for smoother transition
+                    vec4 finalColor = mix(color, vec4(0.2, 0.2, 0.2, 0.0), blendFactor);
+                    gl_FragColor = finalColor;
+                    gl_FragColor.rgb *= ao.rgb; // Apply ambient occlusion
+                }
+            `,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        return shaderMaterial;
+    }
+
 
     /**
      * Creates a material for branches using the specified BranchMaterialParams.

@@ -9,7 +9,7 @@ export interface IrregularPlaneGeometryParams extends BaseIrregularGeometryParam
 }
 
 export class IrregularPlaneGeometry extends BaseIrregularGeometry {
-  private planeParams: Required<IrregularPlaneGeometryParams>;
+  private planeParams: IrregularPlaneGeometryParams;
 
   constructor(params: IrregularPlaneGeometryParams) {
     super(params);

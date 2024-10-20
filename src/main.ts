@@ -74,7 +74,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // Define material patches
   const materialPatches: MaterialPatchParams[] = [
     { center: new THREE.Vector2(0, 0), radius: 16, material: patchMaterial },
-    { center: new THREE.Vector2(0, -10), radius: 8, material: patchMaterial },
   ];
 
   // Add patches to the terrain
@@ -82,9 +81,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const partialGeometry = circularTerrain.getPartialGeometry({
       center: [patch.center.x, patch.center.y],
       radius: patch.radius,
-      smoothingRadius: 0.3,
-      noiseIntensity: 0.01,
-      edgeSmoothing: true,
     });
 
     const patchMesh = new THREE.Mesh(partialGeometry, patch.material);
@@ -93,7 +89,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  waterEntity.setPosition(0, 0, 0);
+  waterEntity.setPosition(0, -1, 0);
 
   const trunkMaterial = materialFactory.createDebugMaterial()
   // Create Tree
@@ -138,7 +134,7 @@ window.addEventListener('DOMContentLoaded', () => {
       })
     )
     .addAmbientLight(0.5)
-    .addTerrain(circularTerrain).addEntity(waterEntity).addEntity(myTree) 
+    .addTerrain(circularTerrain).addEntity(waterEntity).addEntity(myTree)
     .build();
 
   // Setup GUI
