@@ -46,11 +46,43 @@ export class PartialGeometry extends THREE.BufferGeometry {
     noiseIntensity: number,
     smoothingRadius: number
   ): THREE.BufferGeometry {
-    const geom = originalGeometry.clone();
-    const position = geom.attributes.position as THREE.BufferAttribute;
-    const index = geom.index;
-    const uv = geom.attributes.uv as THREE.BufferAttribute | undefined;
+    const geom = this.cloneOriginalGeometry(originalGeometry);
+    const { position, uv, index } = this.extractAttributes(geom);
 
+    const { newPositions, newIndices, newUVs, vertexMap } = this.processVertices(
+      position, uv, center, radius, edgeSmoothing, noiseIntensity, smoothingRadius
+    );
+
+    if (newPositions.length === 0) {
+      console.warn('No vertices found within the specified region. Returning an empty geometry.');
+      return new THREE.BufferGeometry();
+    }
+
+    this.addTrianglesToBuffers(index, vertexMap, newIndices);
+    return this.createGeometryFromBuffers(newPositions, newIndices, newUVs);
+  }
+
+  private cloneOriginalGeometry(originalGeometry: THREE.BufferGeometry): THREE.BufferGeometry {
+    return originalGeometry.clone();
+  }
+
+  private extractAttributes(geom: THREE.BufferGeometry) {
+    const position = geom.attributes.position as THREE.BufferAttribute;
+    const uv = geom.attributes.uv as THREE.BufferAttribute | undefined;
+    const index = geom.index;
+
+    return { position, uv, index };
+  }
+
+  private processVertices(
+    position: THREE.BufferAttribute,
+    uv: THREE.BufferAttribute | undefined,
+    center: THREE.Vector3,
+    radius: number,
+    edgeSmoothing: boolean,
+    noiseIntensity: number,
+    smoothingRadius: number
+  ) {
     const newPositions: number[] = [];
     const newIndices: number[] = [];
     const newUVs: number[] = [];
@@ -67,19 +99,7 @@ export class PartialGeometry extends THREE.BufferGeometry {
 
       if (distanceXZ <= radius) {
         if (edgeSmoothing && distanceXZ >= radius - smoothingRadius) {
-          const direction = new THREE.Vector3(
-            vertex.x - center.x,
-            0,
-            vertex.z - center.z
-          ).normalize();
-
-          const t = (radius - distanceXZ) / smoothingRadius; // Linear interpolation factor
-          vertex.lerp(center.clone().add(direction.multiplyScalar(radius)), t);
-
-          if (noiseIntensity > 0) {
-            const noiseValue = noise(vertex.x * 0.1, vertex.z * 0.1) * noiseIntensity;
-            vertex.add(direction.multiplyScalar(noiseValue));
-          }
+          this.applyEdgeSmoothing(vertex, center, distanceXZ, radius, smoothingRadius);
         }
 
         newPositions.push(vertex.x, vertex.y, vertex.z);
@@ -94,23 +114,28 @@ export class PartialGeometry extends THREE.BufferGeometry {
       }
     }
 
-    if (newPositions.length === 0) {
-      console.warn('No vertices found within the specified region. Returning an empty geometry.');
-      return new THREE.BufferGeometry();
-    }
+    return { newPositions, newIndices, newUVs, vertexMap };
+  }
 
-    if (index) {
-      for (let i = 0; i < index.count; i += 3) {
-        const a = index.getX(i);
-        const b = index.getX(i + 1);
-        const c = index.getX(i + 2);
+  private applyEdgeSmoothing(
+    vertex: THREE.Vector3,
+    center: THREE.Vector3,
+    distanceXZ: number,
+    radius: number,
+    smoothingRadius: number,
+  ) {
+    const direction = new THREE.Vector3(vertex.x - center.x, 0, vertex.z - center.z).normalize();
+    const t = (radius - distanceXZ) / smoothingRadius;
 
-        if (vertexMap.has(a) && vertexMap.has(b) && vertexMap.has(c)) {
-          newIndices.push(vertexMap.get(a)!, vertexMap.get(b)!, vertexMap.get(c)!);
-        }
-      }
-    }
+    vertex.lerp(center.clone().add(direction.multiplyScalar(radius)),t);
 
+  }
+
+  private createGeometryFromBuffers(
+    newPositions: number[],
+    newIndices: number[],
+    newUVs: number[]
+  ): THREE.BufferGeometry {
     const newGeometry = new THREE.BufferGeometry();
     newGeometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
 
@@ -122,5 +147,24 @@ export class PartialGeometry extends THREE.BufferGeometry {
     newGeometry.computeVertexNormals(); // Recompute normals for smooth shading
 
     return newGeometry;
+  }
+
+  // Helper: Add triangles to buffers based on indices
+  private addTrianglesToBuffers(
+    index: THREE.BufferAttribute | null,
+    vertexMap: Map<number, number>,
+    newIndices: number[]
+  ): void {
+    if (index) {
+      for (let i = 0; i < index.count; i += 3) {
+        const a = index.getX(i);
+        const b = index.getX(i + 1);
+        const c = index.getX(i + 2);
+
+        if (vertexMap.has(a) && vertexMap.has(b) && vertexMap.has(c)) {
+          newIndices.push(vertexMap.get(a)!, vertexMap.get(b)!, vertexMap.get(c)!);
+        }
+      }
+    }
   }
 }

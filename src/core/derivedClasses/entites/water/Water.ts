@@ -60,7 +60,7 @@ export type WaterEntityParams = {
 
 export class WaterEntity extends Entity {
   private water: Water;
-  private static readonly DEFAULT_NORMALS_PATH = 'src/assets/normals/waternormals.jpg'; // Default path for waterNormals texture
+  private DEFAULT_NORMALS_PATH = 'src/assets/normals/waternormals.jpg'; // Default path for waterNormals texture
 
   constructor(params: WaterEntityParams) {
     super();
@@ -70,29 +70,25 @@ export class WaterEntity extends Entity {
       throw new Error('WaterEntity class requires a geometry object.');
     }
 
-    // Create a TextureLoader and use default normals if a texture path or waterNormals are not provided
-    let waterNormals: THREE.Texture | undefined = params.waterNormals;
-    if (!waterNormals) {
-      const textureLoader = new THREE.TextureLoader();
-      const texturePath = params.texturePath || WaterEntity.DEFAULT_NORMALS_PATH; // Use user-provided or default path
-      waterNormals = textureLoader.load(texturePath);
-      waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
-    }
+    /// Create the water object
+    this.water = new Water(
+      params.geometry,
+      {
+          textureWidth: 512,
+          textureHeight: 512,
+          waterNormals: new THREE.TextureLoader().load(this.DEFAULT_NORMALS_PATH, function (texture) {
+              texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+          }),
+          sunDirection: new THREE.Vector3(),
+          sunColor: 0xffffff,
+          waterColor: 0x001e0f,
+          distortionScale:0,
+          clipBias: 0,
+      }
+  );
 
-    // Create the water object using the provided parameters
-    this.water = new Water(params.geometry, {
-      textureWidth: params.textureWidth || 512,
-      textureHeight: params.textureHeight || 512,
-      waterNormals: waterNormals, // Use the provided or default normal texture
-      sunDirection: params.sunDirection || new THREE.Vector3(0.2, 1.0, 0.1),
-      sunColor: params.sunColor || 0xffffff,
-      waterColor: params.waterColor || 0x001e0f,
-      distortionScale: params.distortionScale || 3.7,
-      fog: params.fog || false,
-    });
-
-    // Set double-sided rendering 
-    if (params.hasDoubleSide) {
+      // Set double-sided rendering 
+      if(params.hasDoubleSide) {
       this.water.material.side = THREE.DoubleSide;
     }
 
@@ -102,7 +98,7 @@ export class WaterEntity extends Entity {
     waterMaterial.depthFunc = THREE.LessEqualDepth;
     waterMaterial.transparent = true;
     waterMaterial.blending = THREE.NormalBlending;
-    
+
     // Set additional water properties based on params
     if (params.opacity !== undefined) this.water.material.opacity = params.opacity;
     if (params.side !== undefined) this.water.material.side = params.side;

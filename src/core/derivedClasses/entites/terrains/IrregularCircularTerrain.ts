@@ -34,4 +34,8 @@ export class IrregularCircularTerrain extends BaseTerrain {
         this.circularGeometry.updateParams({ heightFactor: newHeightFactor });
         this.updateTerrain(); // Rebuild terrain with updated height factor
     }
+
+    public getHeightAt(x: number, z: number): number {
+        return this.circularGeometry.getHeightAt(x, z); // Delegate to geometry class
+    }
 }

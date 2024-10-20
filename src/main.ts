@@ -5,12 +5,13 @@ import { KalmykiaBuilder } from './core/KalmykiaBuilder';
 import { LightFactory } from './core/derivedClasses/components/light/LightFactory';
 import { MaterialFactory } from './core/derivedClasses/entites/materials/MaterialFactory';
 import { WaterEntity, WaterEntityParams } from './core/derivedClasses/entites/water/Water';
-import { fractalBrownianMotion, seededCircularWavesFunction } from './utils/noise/functions/noiseFunctions';
+import { seededCircularWavesFunction } from './utils/noise/functions/noiseFunctions';
 import { GLTFEntity } from './core/derivedClasses/entites/gtlf/GTLFEntity';
 import { TreeEntity } from './core/derivedClasses/entites/trees/TreeEntity';
 import { getDefaultTreeParams } from './core/derivedClasses/entites/trees/types/TreeParams';
 import { IrregularCircularTerrain, IrregularCircularTerrainParams } from './core/derivedClasses/entites/terrains/IrregularCircularTerrain';
 import { BasinParams, MaterialPatchParams } from './core/derivedClasses/entites/terrains/BaseTerrain';
+import { BumpyPlane } from './core/derivedClasses/entites/geometries/custom/BumpyPlane';
 import { Entity } from './core/parentClasses/Entity';
 import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 
@@ -18,26 +19,25 @@ import { MeshComponent } from './core/derivedClasses/components/MeshComponent';
 const materialFactory = new MaterialFactory();
 const doubleSidedPlaneMaterial = materialFactory.createNonShinyMossMaterial();
 
-// Create noise functions for terrain
-const baseNoise = seededCircularWavesFunction(0.05); // Base noise function
-const softHillNoiseFunction = fractalBrownianMotion(baseNoise, 5, 0.5, 2.0, 1.0); // Smooth hills
 
 window.addEventListener('DOMContentLoaded', () => {
+
   const container = document.getElementById('app') as HTMLElement;
+
+  const bumpyPlane = new BumpyPlane(30, 30, 10, 10, 0.7);
+  const bumpyMesh = new MeshComponent(bumpyPlane.getGeometry(), doubleSidedPlaneMaterial);
+  const bumpyEntity = new Entity();
+  bumpyEntity.addComponent(bumpyMesh);
+  bumpyEntity.setPosition(0, 10, 0);
 
   // Create WaterEntity
   const waterParams: WaterEntityParams = {
-    geometry: new THREE.CircleGeometry(40, 32),
-    sunColor: 0xffffff,
-    waterColor: 0x001e0f,
-    distortionScale: 4,
-    size: 2.0,
-    alpha: 0.85,
-    castShadow: true,
-    receiveShadow: true,
-    hasDoubleSide: true,
-    sunDirection: new THREE.Vector3(1, 1, 1),
+    geometry: new THREE.CircleGeometry(12, 32),
+    alpha: 0.21,
+    hasDoubleSide: false,
+
   };
+
   const waterEntity = new WaterEntity(waterParams);
 
   // Load Duck Model
@@ -48,9 +48,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const basins: BasinParams[] = [
     {
       position: new THREE.Vector2(0, 0),
-      radius: 10,
-      depth: 5,
-      falloff: 'smooth',
+      radius: 12,
+      depth: 7,
+      falloff: "linear",
     },
   ];
 
@@ -58,9 +58,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const circularTerrainParams: IrregularCircularTerrainParams = {
     terrainGeometry: {
       radius: 100,
-      segments: 200,
-      noiseFunction: softHillNoiseFunction,
-      heightFactor: 10,
+      segments: 400,
+      noiseFunction: seededCircularWavesFunction(1, 0.2),
+      heightFactor: 7,
       position: [0, 0, 0],
     },
     terrainMaterial: doubleSidedPlaneMaterial,
@@ -69,12 +69,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const circularTerrain = new IrregularCircularTerrain(circularTerrainParams);
   const patchMaterial = materialFactory.createWetMudMaterial()
-
+  const height = circularTerrain.getHeightAt(0, 0); // Get height at the center
+  console.log(height);
   // Define material patches
   const materialPatches: MaterialPatchParams[] = [
     { center: new THREE.Vector2(0, 0), radius: 16, material: patchMaterial },
     { center: new THREE.Vector2(0, -10), radius: 8, material: patchMaterial },
-    { center: new THREE.Vector2(0, -30), radius: 8, material: materialFactory.createSnowMaterial() },
   ];
 
   // Add patches to the terrain
@@ -82,6 +82,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const partialGeometry = circularTerrain.getPartialGeometry({
       center: [patch.center.x, patch.center.y],
       radius: patch.radius,
+      smoothingRadius: 0.3,
+      noiseIntensity: 0.01,
+      edgeSmoothing: true,
     });
 
     const patchMesh = new THREE.Mesh(partialGeometry, patch.material);
@@ -90,21 +93,22 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  waterEntity.setPosition(0, 1, 0);
+  waterEntity.setPosition(0, 0, 0);
 
+  const trunkMaterial = materialFactory.createDebugMaterial()
   // Create Tree
   const treeParams = getDefaultTreeParams({
-    trunkParams: { trunkHeight: 30, trunkBaseRadius: 3 },
+    trunkParams: { trunkHeight: 30, trunkBaseRadius: 1.7, trunkTopRadius: 0.43 },
     environmentalParams: { windStrength: 0.5 },
   });
   const myTree = new TreeEntity(treeParams);
-  myTree.setPosition(50, 20, 2);
+  myTree.setPosition(30, -1, 0);
 
   // Initialize Kalmykia Engine
   const engine = new KalmykiaBuilder(container)
     .setCamera({
       cameraType: CameraType.Perspective,
-      position: new THREE.Vector3(0, 100, 100),
+      position: new THREE.Vector3(0, 50, 0),
       fov: 60,
       aspect: window.innerWidth / window.innerHeight,
       near: 1,
@@ -134,7 +138,7 @@ window.addEventListener('DOMContentLoaded', () => {
       })
     )
     .addAmbientLight(0.5)
-    .addTerrain(circularTerrain)
+    .addTerrain(circularTerrain).addEntity(waterEntity).addEntity(myTree) 
     .build();
 
   // Setup GUI

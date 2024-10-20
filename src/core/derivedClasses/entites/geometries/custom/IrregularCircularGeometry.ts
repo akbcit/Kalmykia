@@ -85,23 +85,31 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
    */
   public applyNoise(): void {
     const positions = this.geometry.attributes.position as THREE.BufferAttribute;
-    const { radius, noiseFunction, heightFactor } = this.params;
-
-    if (!noiseFunction) return;  // Skip if no noise function
-
+    const { radius, noiseFunction, heightFactor, segments } = this.params;
+  
+    if (!noiseFunction) return; // Skip if no noise function
+  
+    const noiseScale = 1 / Math.sqrt(segments/2); // Scale noise based on segment density
+  
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
-      const z = positions.getZ(i);  // Use Z instead of Y
-
-      const nx = (x + radius) / (2 * radius);
-      const nz = (z + radius) / (2 * radius);
-
+      const z = positions.getZ(i); // Use Z instead of Y
+  
+      // Scale X and Z for smoother transitions in noise
+      const nx = (x + radius) / (2 * radius) * noiseScale;
+      const nz = (z + radius) / (2 * radius) * noiseScale;
+  
+      // Apply interpolated noise to create smoother height transitions
       const noiseValue = noiseFunction(nx, nz) * heightFactor;
-      positions.setY(i, noiseValue);  // Apply noise to Y-axis for height
+      const currentY = positions.getY(i);
+  
+      // Use linear interpolation for smoother blending
+      const smoothedY = THREE.MathUtils.lerp(currentY, noiseValue, 0.5);
+      positions.setY(i, smoothedY);
     }
-
+  
     positions.needsUpdate = true;
-    this.geometry.computeVertexNormals();  // Recompute normals
+    this.geometry.computeVertexNormals(); // Recompute normals for smooth shading
   }
 
   /**
@@ -119,5 +127,21 @@ export class IrregularCircularGeometry extends BaseIrregularGeometry {
   public setHeightFactor(newHeightFactor: number): void {
     this.params.heightFactor = newHeightFactor;
     this.applyNoise();  // Reapply noise with the new height factor
+  }
+
+  public getHeightAt(x: number, z: number): number {
+    const { radius, noiseFunction, heightFactor } = this.params;
+
+    // Ensure the point is within the circular boundary
+    if (x * x + z * z > radius * radius) {
+      console.warn(`Point (${x}, ${z}) is outside the terrain boundary.`);
+      return 0;
+    }
+
+    const nx = (x + radius) / (2 * radius); // Normalize x
+    const nz = (z + radius) / (2 * radius); // Normalize z
+
+    const noiseValue = noiseFunction ? noiseFunction(nx, nz) : 0;
+    return noiseValue * heightFactor;
   }
 }
