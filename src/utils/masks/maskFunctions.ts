@@ -1,4 +1,4 @@
-import { createNoise2D } from 'simplex-noise'; // Import Simplex noise
+import { createNoise2D } from 'simplex-noise';  
 import { NoiseFunction } from '../noise/types/NoiseFunction';
 
 // Define a type for the mask function

@@ -91,10 +91,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   waterEntity.setPosition(0, -1, 0);
 
-  const trunkMaterial = materialFactory.createDebugMaterial()
   // Create Tree
   const treeParams = getDefaultTreeParams({
-    trunkParams: { trunkHeight: 30, trunkBaseRadius: 1.7, trunkTopRadius: 0.43 },
+    trunkParams: { trunkHeight: 20, trunkBaseRadius: 1.2, trunkTopRadius: 0.6 },
     environmentalParams: { windStrength: 0.5 },
   });
   const myTree = new TreeEntity(treeParams);
@@ -104,7 +103,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const engine = new KalmykiaBuilder(container)
     .setCamera({
       cameraType: CameraType.Perspective,
-      position: new THREE.Vector3(0, 50, 0),
+      position: new THREE.Vector3(60, 30, 5),
       fov: 60,
       aspect: window.innerWidth / window.innerHeight,
       near: 1,

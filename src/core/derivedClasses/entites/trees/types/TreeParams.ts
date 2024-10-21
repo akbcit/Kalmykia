@@ -255,7 +255,7 @@ export function getDefaultTreeParams(overrides?: PartialTreeParams): TreeParams 
       trunkTopRadius: 1.5,
       trunkSegments: 16,
       trunkTapering: 0.2,
-      trunkMaterial:materialFactory.createDebugMaterial(),
+      trunkMaterial:materialFactory.createBarkMaterial2(),
       rootFlareWidth: undefined,
     },
     branchParams: {

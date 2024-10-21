@@ -314,86 +314,110 @@ export class MaterialFactory {
         return material;
     }
 
-    public createTrunkMaterial(params?: TrunkMaterialParams): THREE.MeshStandardMaterial {
-        const materialParams: THREE.MeshStandardMaterialParameters = {
-            color: params?.color || 0x8B4513,   // Default brown color for trunk
-            roughness: params?.roughness ?? 0.8,
-            metalness: params?.metalness ?? 0,
-        };
-
-        // Apply bark texture if path is provided
-        if (params?.barkTexturePath) {
-            materialParams.map = this.textureLoader.load(params.barkTexturePath);
-        }
-
-        // Create and return the material
-        return new THREE.MeshStandardMaterial(materialParams);
-    }
-
-    public createWetMudShaderMaterial(center: [number, number], radius: number): THREE.ShaderMaterial {
-        const colorTexture = this.loadTexture('src/assets/textures/mud/ground_0005_basecolor_1k.jpg');
-        const normalTexture = this.loadTexture('src/assets/textures/mud/ground_0005_normal_1k.png');
-        const roughnessTexture = this.loadTexture('src/assets/textures/mud/ground_0005_roughness_1k.jpg');
-        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/mud/ground_0005_ambient_occlusion_1k.jpg'); // Optional
-
+    public createBarkMaterial(): THREE.MeshStandardMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_Color.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_NormalGL.jpg');
+        const roughnessTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_Roughness.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_Displacement.jpg'); // Optional for added depth
+    
         // Ensure all textures are set to repeat and wrap correctly
-        [colorTexture, normalTexture, roughnessTexture, ambientOcclusionTexture].forEach((texture) => {
+        [colorTexture, normalTexture, roughnessTexture, ambientOcclusionTexture, displacementTexture].forEach((texture) => {
             if (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(10, 10); // Adjust repetition
+                texture.repeat.set(10, 10); // Adjust repetition based on bark appearance
             }
         });
-
-        // Create the shader material
-        const shaderMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                colorMap: { value: colorTexture },
-                normalMap: { value: normalTexture },
-                roughnessMap: { value: roughnessTexture },
-                aoMap: { value: ambientOcclusionTexture },
-                center: { value: new THREE.Vector3(center[0], 0, center[1]) },
-                radius: { value: radius }
-            },
-            vertexShader: `
-                varying vec3 vPosition;
-                varying vec2 vUv;
-                void main() {
-                    vPosition = position;
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform sampler2D colorMap;
-                uniform sampler2D normalMap;
-                uniform sampler2D roughnessMap;
-                uniform sampler2D aoMap;
-                uniform vec3 center;
-                uniform float radius;
-                varying vec3 vPosition;
-                varying vec2 vUv;
-                
-                void main() {
-                    float dist = distance(vPosition.xz, center.xz);
-                    float blendFactor = smoothstep(radius - 0.2, radius, dist); // Adjust 0.2 for sharpness
     
-                    vec4 color = texture2D(colorMap, vUv);
-                    vec4 ao = texture2D(aoMap, vUv);
-                    vec4 roughness = texture2D(roughnessMap, vUv);
-                    vec4 normal = texture2D(normalMap, vUv);
+        // Darken the material by applying a dark color overlay
+        const darkColorOverlay = new THREE.Color(0xD66B00);  
     
-                    // Apply blending based on distance for smoother transition
-                    vec4 finalColor = mix(color, vec4(0.2, 0.2, 0.2, 0.0), blendFactor);
-                    gl_FragColor = finalColor;
-                    gl_FragColor.rgb *= ao.rgb; // Apply ambient occlusion
-                }
-            `,
-            transparent: true,
-            side: THREE.DoubleSide
+        // Create and return the material with the textures applied
+        const material = new THREE.MeshStandardMaterial({
+            map: colorTexture,
+            normalMap: normalTexture,
+            roughnessMap: roughnessTexture,
+            aoMap: ambientOcclusionTexture, // Adds depth by simulating shadow areas
+            displacementMap: displacementTexture, // Optional: Adds height variation
+            displacementScale: 0.1, // Adjust this value based on how pronounced the bark texture should appear
+            roughness: 1, // Adjust based on the bark's roughness
+            metalness: 0, // Non-metallic
+            color: darkColorOverlay, // Darken the material
+            side: THREE.DoubleSide,
         });
-
-        return shaderMaterial;
+    
+        return material;
     }
+
+    public createBarkMaterial1(): THREE.MeshStandardMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_Color.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_NormalGL.jpg');
+        const roughnessTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_Roughness.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/bark_01/Bark014_1K-JPG_Displacement.jpg'); // Optional for added depth
+    
+        // Ensure all textures are set to repeat and wrap correctly
+        [colorTexture, normalTexture, roughnessTexture, ambientOcclusionTexture, displacementTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(2, 2); // Adjust repetition based on bark appearance
+            }
+        });
+    
+        // Darken the material by applying a dark color overlay
+        const darkColorOverlay = new THREE.Color(0xD66B00);  
+    
+        // Create and return the material with the textures applied
+        const material = new THREE.MeshStandardMaterial({
+            map: colorTexture,
+            normalMap: normalTexture,
+            roughnessMap: roughnessTexture,
+            aoMap: ambientOcclusionTexture, // Adds depth by simulating shadow areas
+            displacementMap: displacementTexture, // Optional: Adds height variation
+            displacementScale: 0.1, // Adjust this value based on how pronounced the bark texture should appear
+            roughness: 1, // Adjust based on the bark's roughness
+            metalness: 0, // Non-metallic
+            color: darkColorOverlay, // Darken the material
+            side: THREE.DoubleSide,
+        });
+    
+        return material;
+    }
+
+    public createBarkMaterial2(): THREE.MeshStandardMaterial {
+        const colorTexture = this.loadTexture('src/assets/textures/bark_02/Bark008_1K-JPG_Color.jpg');
+        const normalTexture = this.loadTexture('src/assets/textures/bark_02/Bark008_1K-JPG_NormalGL.jpg');
+        const roughnessTexture = this.loadTexture('src/assets/textures/bark_02/Bark008_1K-JPG_Roughness.jpg');
+        const ambientOcclusionTexture = this.loadTexture('src/assets/textures/bark_02/Bark008_1K-JPG_AmbientOcclusion.jpg');
+        const displacementTexture = this.loadTexture('src/assets/textures/bark_02/Bark008_1K-JPG_Displacement.jpg'); // Optional for added depth
+    
+        // Ensure all textures are set to repeat and wrap correctly
+        [colorTexture, normalTexture, roughnessTexture, ambientOcclusionTexture, displacementTexture].forEach((texture) => {
+            if (texture) {
+                texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(10, 10); // Adjust repetition based on bark appearance
+            }
+        });
+    
+        // Create and return the material with the textures applied
+        const material = new THREE.MeshStandardMaterial({
+            map: colorTexture,
+            normalMap: normalTexture,
+            roughnessMap: roughnessTexture,
+            aoMap: ambientOcclusionTexture, // Adds depth by simulating shadow areas
+            displacementMap: displacementTexture, // Optional: Adds height variation
+            displacementScale: 0.1, // Adjust this value based on how pronounced the bark texture should appear
+            roughness: 1, // Adjust based on the bark's roughness
+            metalness: 0, // Non-metallic
+            side: THREE.DoubleSide,
+        });
+    
+        return material;
+    }
+
+
+
+
 
 
     /**
